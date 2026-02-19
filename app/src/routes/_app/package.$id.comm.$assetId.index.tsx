@@ -9,6 +9,7 @@ import {
 import {
   assetDetailQueryOptions,
   commercialEvaluationsQueryOptions,
+  packageDetailQueryOptions,
   packageContractorsQueryOptions,
 } from "@/lib/query-options"
 import {
@@ -212,6 +213,7 @@ function RouteComponent() {
   const queryClient = useQueryClient()
 
   const { data: assetData } = useSuspenseQuery(assetDetailQueryOptions(assetId))
+  const { data: packageData } = useSuspenseQuery(packageDetailQueryOptions(id))
   const { data: evaluations } = useSuspenseQuery(
     commercialEvaluationsQueryOptions(assetId)
   )
@@ -761,6 +763,7 @@ function RouteComponent() {
       return (
         <VendorComparison
           report={resolvedReportData as unknown as ComparisonReport}
+          currency={packageData.package.currency ?? undefined}
         />
       )
     }

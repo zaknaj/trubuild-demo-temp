@@ -477,9 +477,17 @@ function RankBadge({ rank }: { rank: number }) {
   )
 }
 
-function BidderSummaryTable({ report }: { report: ComparisonReport }) {
+function BidderSummaryTable({
+  report,
+  currency,
+}: {
+  report: ComparisonReport
+  currency?: string
+}) {
   const loVendor = report.summary.lowest_bidder
   const loTotal = loVendor ? report.summary.vendor_totals[loVendor] || 0 : 0
+  const fmtWithCurrency = (value: number) =>
+    currency ? `${currency} ${fmt(value)}` : fmt(value)
 
   const sorted = [...report.vendors]
     .map((v) => ({ name: v, total: report.summary.vendor_totals[v] || 0 }))
@@ -541,7 +549,7 @@ function BidderSummaryTable({ report }: { report: ComparisonReport }) {
                 </div>
               </td>
               <td className="px-4 py-3 text-right tabular-nums font-bold text-sky-700">
-                {fmt(pteTotal)}
+                {fmtWithCurrency(pteTotal)}
               </td>
               <td className="px-4 py-3 text-right tabular-nums font-semibold text-[12px] text-sky-600">
                 {loTotal > 0 ? `${((pteTotal / loTotal) * 100).toFixed(1)}%` : "\u2014"}
@@ -614,7 +622,7 @@ function BidderSummaryTable({ report }: { report: ComparisonReport }) {
                     isLo ? "text-emerald-700" : "text-foreground"
                   )}
                 >
-                  {fmt(v.total)}
+                  {fmtWithCurrency(v.total)}
                 </td>
                 <td
                   className={cn(
@@ -668,8 +676,10 @@ function BidderSummaryTable({ report }: { report: ComparisonReport }) {
 // ============================================================================
 export function VendorComparison({
   report: raw,
+  currency,
 }: {
   report: ComparisonReport
+  currency?: string
 }) {
   const [search, setSearch] = useState("")
   const [expDiv, setExpDiv] = useState<Set<string>>(new Set())
@@ -867,13 +877,13 @@ export function VendorComparison({
             icon={<BarChart3 className="size-4" />}
             label="Cost Spread"
             value={fmtCompact(spread)}
-            sub="highest \u2013 lowest"
+            sub="highest - lowest"
             accent={spread > 0 ? "default" : "default"}
           />
         </div>
 
         {/* ── Bidder Ranking ──────────────────────────────────────── */}
-        <BidderSummaryTable report={report} />
+        <BidderSummaryTable report={report} currency={currency} />
 
         {/* ── Toolbar ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-3">
