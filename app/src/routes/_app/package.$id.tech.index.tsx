@@ -311,7 +311,7 @@ function RouteComponent() {
       <div className="p-6">
         <p className="text-muted-foreground">
           {technicalEvaluations.length === 0
-            ? "Select or create an evaluation round"
+            ? "Create a technical evaluation to get started"
             : "Loading selected evaluation..."}
         </p>
       </div>

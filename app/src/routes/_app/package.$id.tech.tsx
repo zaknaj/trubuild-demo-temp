@@ -10,7 +10,6 @@ import useStore from "@/lib/store"
 import { BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TechSetupWizard } from "@/components/TechSetupWizard"
-import { PackageContentHeader } from "@/components/PackageContentHeader"
 
 type TechnicalEvaluation = {
   id: string
@@ -71,16 +70,7 @@ function RouteComponent() {
     }
   }, [evaluations, selectedRoundId, setTechRound, id])
 
-  // Get current round - use stored, or default to latest
-  const currentRound = selectedRoundId
-    ? evaluations.find((e) => e.id === selectedRoundId)
-    : evaluations[0]
-
   const hasEvaluations = evaluations.length > 0
-
-  const handleRoundSelect = (roundId: string) => {
-    setTechRound(id, roundId)
-  }
 
   // Empty state - no evaluations yet
   if (!hasEvaluations) {
@@ -112,25 +102,8 @@ function RouteComponent() {
     )
   }
 
-  const rounds = evaluations.map((e) => ({
-    id: e.id,
-    roundName: e.roundName,
-  }))
-
   return (
     <div className="flex flex-1 flex-col overflow-hidden h-full">
-      <PackageContentHeader
-        variant="technical"
-        packageId={id}
-        rounds={rounds}
-        currentRound={
-          currentRound
-            ? { id: currentRound.id, roundName: currentRound.roundName }
-            : undefined
-        }
-        onRoundSelect={handleRoundSelect}
-        onNewRound={() => setIsSetupWizardOpen(true)}
-      />
       <div className="flex-1 overflow-auto">
         <Outlet />
       </div>

@@ -413,7 +413,7 @@ function RouteComponent() {
       await queryClient.invalidateQueries({
         queryKey: commercialEvaluationsQueryOptions(assetId).queryKey,
       })
-      toast.success(`${newEval.roundName} created`)
+      toast.success("Commercial evaluation created")
       setIsSetupOpen(false)
       createAndRunEvaluation.mutate(newEval)
     } catch (error) {
@@ -434,7 +434,7 @@ function RouteComponent() {
   const recoverMissingData = useMutation({
     mutationFn: async () => {
       if (!currentRound) {
-        throw new Error("No round selected")
+        throw new Error("No evaluation selected")
       }
 
       const recovered = await getLatestCommRfpCompareResultForAssetFn({
@@ -774,7 +774,7 @@ function RouteComponent() {
     )
   }
 
-  // Fallback for rounds without persisted data
+  // Fallback for evaluations without persisted data
   return (
     <div className="flex flex-col items-center justify-center h-full p-12 text-center">
       <div className="flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
@@ -782,7 +782,7 @@ function RouteComponent() {
       </div>
       <h3 className="text-lg font-semibold mb-2">No evaluation data found</h3>
       <p className="text-muted-foreground mb-6 max-w-sm">
-        This round has no persisted comparison report yet. You can run the
+        This evaluation has no persisted comparison report yet. You can run the
         evaluation again for this asset.
       </p>
       <div className="flex items-center gap-2">

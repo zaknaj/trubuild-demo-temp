@@ -24,6 +24,7 @@ import {
   sessionQueryOptions,
 } from "@/lib/query-options"
 import { CountrySelect } from "@/components/CountrySelect"
+import { SimpleHeader } from "@/components/SimpleHeader"
 import { getOrgCountry } from "@/lib/utils"
 import type { Project } from "@/lib/types"
 import { PlusIcon, FolderIcon, ChevronRightIcon } from "lucide-react"
@@ -83,6 +84,7 @@ function RouteComponent() {
 
   return (
     <>
+      <SimpleHeader title="All projects" />
       <div className="flex-1 overflow-auto">
         <div className="max-w-[600px] mx-auto p-6 space-y-4">
           <div className="flex items-center justify-between">

@@ -47,7 +47,6 @@ import { StepTitle } from "@/components/ui/step-title"
 import { UserIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { PackageContentHeader } from "@/components/PackageContentHeader"
 
 type CommercialEvaluation = {
   id: string
@@ -112,7 +111,7 @@ function RouteComponent() {
     Record<string, UploadedFile[]>
   >({})
 
-  // Commercial setup sheet state (for new round)
+  // Commercial setup sheet state
   const [isSetupOpen, setIsSetupOpen] = useState(false)
   const [evalBoqFile, setEvalBoqFile] = useState<UploadedFile[]>([])
   const [evalPteFile, setEvalPteFile] = useState<UploadedFile[]>([])
@@ -208,10 +207,6 @@ function RouteComponent() {
         setEvalPteFile={setEvalPteFile}
         evalVendorFiles={evalVendorFiles}
         setEvalVendorFiles={setEvalVendorFiles}
-        // Pass saved files from asset creation for preloading
-        savedBoqFile={boqFile}
-        savedPteFile={pteFile}
-        savedVendorFiles={vendorFiles}
       />
     )
   }
@@ -219,7 +214,6 @@ function RouteComponent() {
   // Package summary view
   return (
     <div className="flex flex-1 flex-col overflow-hidden h-full">
-      <PackageContentHeader variant="commercial-summary" />
       <div className="flex-1 overflow-auto">
         <Outlet />
       </div>
@@ -388,9 +382,6 @@ function AssetView({
   setEvalPteFile,
   evalVendorFiles,
   setEvalVendorFiles,
-  savedBoqFile,
-  savedPteFile,
-  savedVendorFiles,
 }: {
   packageId: string
   assetId: string
@@ -406,9 +397,6 @@ function AssetView({
   setEvalVendorFiles: React.Dispatch<
     React.SetStateAction<Record<string, UploadedFile[]>>
   >
-  savedBoqFile: UploadedFile[]
-  savedPteFile: UploadedFile[]
-  savedVendorFiles: Record<string, UploadedFile[]>
 }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -422,7 +410,6 @@ function AssetView({
   // Get/set round from Zustand store
   const selectedRoundId = useStore((s) => s.selectedCommRound[assetId])
   const setCommRound = useStore((s) => s.setCommRound)
-  const storedAssetFiles = useStore((s) => s.assetFiles[assetId])
 
   // Auto-select latest round when no round is stored or stored round is invalid
   useEffect(() => {
@@ -435,12 +422,7 @@ function AssetView({
     }
   }, [evaluationsList, selectedRoundId, assetId, setCommRound])
 
-  // Get current round
-  const currentRound = selectedRoundId
-    ? evaluationsList.find((e) => e.id === selectedRoundId)
-    : evaluationsList[0]
-
-  // Create new round with data
+  // Create a commercial evaluation with data
   const createAndRunEvaluation = useMutation({
     mutationFn: async () => {
       const vendorFileCount = Object.values(evalVendorFiles).filter(
@@ -533,7 +515,7 @@ function AssetView({
       }
     },
     onSuccess: async (newEval) => {
-      toast.success(`${newEval.roundName} created`)
+      toast.success("Commercial evaluation created")
       await queryClient.invalidateQueries({
         queryKey: commercialEvaluationsQueryOptions(assetId).queryKey,
       })
@@ -547,54 +529,19 @@ function AssetView({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create round"
+        error instanceof Error
+          ? error.message
+          : "Failed to create commercial evaluation"
       )
     },
   })
-
-  const handleRoundSelect = (roundId: string) => {
-    setCommRound(assetId, roundId)
-  }
-
-  const handleOpenSetup = () => {
-    // Preload with saved files from store (persisted from asset creation)
-    if (storedAssetFiles) {
-      setEvalBoqFile([...storedAssetFiles.boqFile])
-      setEvalPteFile([...storedAssetFiles.pteFile])
-      setEvalVendorFiles({ ...storedAssetFiles.vendorFiles })
-    } else {
-      setEvalBoqFile([...savedBoqFile])
-      setEvalPteFile([...savedPteFile])
-      setEvalVendorFiles({ ...savedVendorFiles })
-    }
-    setIsSetupOpen(true)
-  }
 
   const handleVendorFilesChange = (vendorId: string, files: UploadedFile[]) => {
     setEvalVendorFiles((prev) => ({ ...prev, [vendorId]: files }))
   }
 
-  const rounds = evaluationsList.map((e) => ({
-    id: e.id,
-    roundName: e.roundName,
-  }))
-
   return (
     <div className="flex flex-1 flex-col overflow-hidden h-full">
-      <PackageContentHeader
-        variant="asset"
-        packageId={packageId}
-        assetId={assetId}
-        assetName={assetName}
-        rounds={rounds}
-        currentRound={
-          currentRound
-            ? { id: currentRound.id, roundName: currentRound.roundName }
-            : undefined
-        }
-        onRoundSelect={handleRoundSelect}
-        onNewRound={handleOpenSetup}
-      />
       <div className="flex-1 overflow-auto">
         <Outlet />
       </div>

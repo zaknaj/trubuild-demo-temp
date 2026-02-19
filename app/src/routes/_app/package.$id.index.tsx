@@ -276,13 +276,10 @@ function RouteComponent() {
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b-[0.5px] border-black/15 h-12 px-6">
-        <div className="flex items-center gap-4">
-          <span className="text-primary font-semibold text-16">
-            Package summary
-          </span>
-          {!awardedContractor && contractors.length > 0 && (
+      {/* Main content */}
+      <div className="flex-1 overflow-auto p-6 space-y-6">
+        {!awardedContractor && contractors.length > 0 && (
+          <div className="flex justify-end">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -316,12 +313,9 @@ function RouteComponent() {
                 )}
               </Tooltip>
             </TooltipProvider>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
 
-      {/* Main content */}
-      <div className="flex-1 overflow-auto p-6 space-y-6">
         {/* Awarded Banner */}
         {awardedContractor && (
           <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">

@@ -73,8 +73,14 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const { data: projectData } = useSuspenseQuery(projectDetailQueryOptions(id))
   const { data: accessData } = useSuspenseQuery(projectAccessQueryOptions(id))
+  const { data: projectMembers } = useSuspenseQuery(projectMembersQueryOptions(id))
 
   const { project, packages } = projectData
+  const memberCount = projectMembers.length
+  const membersLabel =
+    memberCount === 0
+      ? "No members"
+      : `${memberCount} ${memberCount === 1 ? "member" : "members"}`
 
   const canViewCommercial =
     accessData.access === "full" || accessData.access === "commercial"
@@ -220,10 +226,26 @@ function RouteComponent() {
       <div className="flex flex-1 h-full">
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between border-b-[0.5px] border-black/15 h-12 px-6">
-            <span className="text-primary font-semibold text-16">
-              Project overview
-            </span>
+          <div className="flex items-center justify-between h-12 px-6">
+            <div className="flex items-center gap-1 text-[14px] font-medium text-black min-w-0">
+              <Link to="/all-projects" className="opacity-40 hover:opacity-70 truncate">
+                All projects
+              </Link>
+              <ChevronRightIcon size={12} className="opacity-40 shrink-0" />
+              <Link
+                to="/project/$id"
+                params={{ id: project.id }}
+                className="opacity-100 truncate"
+              >
+                {project.name}
+              </Link>
+            </div>
+            <div className="flex items-center gap-[6px] min-w-0">
+              <span className="h-6 w-6 rounded-full bg-[#E0E0E0] shrink-0" />
+              <span className="text-[13px] font-medium text-black truncate">
+                {membersLabel}
+              </span>
+            </div>
           </div>
 
           {/* Content */}
