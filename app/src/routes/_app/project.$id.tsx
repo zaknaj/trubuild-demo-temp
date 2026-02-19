@@ -22,8 +22,6 @@ import {
 } from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ProjectSidebar } from "@/components/ProjectSidebar"
-import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog"
 import { createPackageFn } from "@/fn/packages"
 import {
   projectDetailQueryOptions,
@@ -33,7 +31,6 @@ import {
 } from "@/lib/query-options"
 import { getCurrencyForCountry } from "@/lib/countries"
 import { CurrencySelect } from "@/components/CurrencySelect"
-import { AIChatButton } from "@/components/AIChatButton"
 import { StepTitle } from "@/components/ui/step-title"
 
 type PackageWithAssetCount = {
@@ -76,14 +73,9 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const { data: projectData } = useSuspenseQuery(projectDetailQueryOptions(id))
   const { data: accessData } = useSuspenseQuery(projectAccessQueryOptions(id))
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<
-    "general" | "members" | "activity"
-  >("general")
 
   const { project, packages } = projectData
 
-  const hasProjectLevelAccess = accessData.hasProjectLevelAccess
   const canViewCommercial =
     accessData.access === "full" || accessData.access === "commercial"
 
@@ -171,13 +163,6 @@ function RouteComponent() {
     })
   }
 
-  const openSettings = (
-    tab: "general" | "members" | "activity" = "general"
-  ) => {
-    setSettingsTab(tab)
-    setSettingsOpen(true)
-  }
-
   const packagesList = useMemo(() => {
     if (packages.length === 0) {
       return (
@@ -232,20 +217,13 @@ function RouteComponent() {
 
   return (
     <>
-      <div className="flex flex-1 overflow-hidden h-full">
-        {/* Sidebar */}
-        {hasProjectLevelAccess && (
-          <ProjectSidebar projectId={id} onSettingsClick={openSettings} />
-        )}
-
-        {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-hidden content-shadow rounded-xl">
+      <div className="flex flex-1 h-full">
+        <div className="flex-1 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b-[0.5px] border-black/15 h-12 px-6">
             <span className="text-primary font-semibold text-16">
               Project overview
             </span>
-            <AIChatButton />
           </div>
 
           {/* Content */}
@@ -272,15 +250,6 @@ function RouteComponent() {
           </div>
         </div>
       </div>
-
-      {hasProjectLevelAccess && (
-        <ProjectSettingsDialog
-          projectId={id}
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          defaultTab={settingsTab}
-        />
-      )}
 
       <Sheet open={drawerOpen} onOpenChange={(open) => !open && closeDrawer()}>
         <SheetContent className="min-w-[500px] sm:max-w-none overflow-y-auto">

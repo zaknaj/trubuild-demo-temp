@@ -8,7 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { AIChatButton } from "@/components/AIChatButton"
 import { cn } from "@/lib/utils"
 
 type Round = {
@@ -120,7 +119,6 @@ export function PackageContentHeader(props: PackageContentHeaderProps) {
             Commercial summary
           </span>
         </div>
-        <AIChatButton />
       </div>
     )
   }
@@ -164,7 +162,6 @@ export function PackageContentHeader(props: PackageContentHeaderProps) {
             </HeaderNavLink>
           </nav>
         </div>
-        <AIChatButton />
       </div>
     )
   }
@@ -216,7 +213,6 @@ export function PackageContentHeader(props: PackageContentHeaderProps) {
           </HeaderNavLink>
         </nav>
       </div>
-      <AIChatButton />
     </div>
   )
 }

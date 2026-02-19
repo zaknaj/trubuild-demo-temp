@@ -819,7 +819,7 @@ function Step1Documents({
                   className={cn(
                     "rounded-lg border p-4 transition-colors",
                     hasFiles &&
-                      "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
+                      "border-emerald-500 bg-emerald-50/50"
                   )}
                 >
                   <div className="flex items-center gap-3 mb-3">
@@ -848,7 +848,7 @@ function Step1Documents({
             })}
 
             {vendorsWithFiles < 2 && (
-              <p className="text-sm text-amber-600 dark:text-amber-500">
+              <p className="text-sm text-amber-600">
                 At least 2 vendors must have files to proceed
               </p>
             )}

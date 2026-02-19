@@ -139,15 +139,6 @@
   );
 }
 
-.text-gradient {
-  /* E06F65 to C661E5 to 3C32FF */
-  background: linear-gradient(90deg, #e06f65 0%, #c661e5 50%, #854cf1 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-
 .main-gradient {
   background: linear-gradient(180deg, #161661 0%, #2439a2 100%);
 }
@@ -170,7 +161,7 @@
 
 /* =============================================================================
    Nav Item Styles
-   Common: text 13px, height 28px, 1px gap, active = semibold
+   Common light nav items for settings/dialogs
 ============================================================================= */
 
 /* Base nav item - shared properties */
@@ -187,20 +178,6 @@
 
 .nav-item.active {
   font-weight: 600;
-}
-
-/* Main sidebar nav items (dark background) */
-.nav-item-dark {
-  color: white;
-}
-
-.nav-item-dark:hover:not(.active) {
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.nav-item-dark.active {
-  background-color: rgba(255, 255, 255, 0.2);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
 }
 
 /* Light menu nav items (settings, etc.) */

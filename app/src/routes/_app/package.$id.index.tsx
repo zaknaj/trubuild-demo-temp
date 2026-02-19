@@ -51,7 +51,6 @@ import { awardPackageFn } from "@/fn/packages"
 import type { TechnicalEvaluationData } from "@/components/TechSetupWizard"
 import type { CommercialEvaluationData } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
-import { AIChatButton } from "@/components/AIChatButton"
 
 export const Route = createFileRoute("/_app/package/$id/")({
   loader: ({ params, context }) => {
@@ -319,7 +318,6 @@ function RouteComponent() {
             </TooltipProvider>
           )}
         </div>
-        <AIChatButton />
       </div>
 
       {/* Main content */}

@@ -246,15 +246,15 @@ function RouteComponent() {
               </div>
             </div>
 
-            <div className="rounded-lg border bg-emerald-50/60 dark:bg-emerald-950/20 px-3 py-2.5 flex items-center gap-2.5">
-              <div className="p-1.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40">
-                <Trophy className="size-3.5 text-emerald-700 dark:text-emerald-400" />
+            <div className="rounded-lg border bg-emerald-50/60 px-3 py-2.5 flex items-center gap-2.5">
+              <div className="p-1.5 rounded-md bg-emerald-100">
+                <Trophy className="size-3.5 text-emerald-700" />
               </div>
               <div>
-                <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80">
+                <p className="text-[11px] text-emerald-700/80">
                   Lowest Total
                 </p>
-                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                <p className="text-sm font-semibold text-emerald-700">
                   {sortedContractors[0]
                     ? formatCurrency(sortedContractors[0].total, packageCurrency)
                     : "—"}
@@ -283,7 +283,7 @@ function RouteComponent() {
                       className={cn(
                         "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px]",
                         isLowest
-                          ? "border-emerald-300 bg-emerald-100/70 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400"
+                          ? "border-emerald-300 bg-emerald-100/70 text-emerald-700"
                           : "border-border bg-background text-muted-foreground"
                       )}
                     >
@@ -308,7 +308,7 @@ function RouteComponent() {
                         key={contractor.id}
                         className={cn(
                           "text-right px-2 py-1.5 border-b font-medium min-w-[100px]",
-                          isLowest && "bg-emerald-100/80 dark:bg-emerald-900/40"
+                          isLowest && "bg-emerald-100/80"
                         )}
                       >
                         <div className="flex flex-col items-end gap-0.5">
@@ -316,7 +316,7 @@ function RouteComponent() {
                             className={cn(
                               "truncate max-w-[100px] text-xs",
                               isLowest &&
-                                "text-emerald-700 dark:text-emerald-400"
+                                "text-emerald-700"
                             )}
                           >
                             {contractor.name}
@@ -325,7 +325,7 @@ function RouteComponent() {
                             className={cn(
                               "text-[10px] font-normal",
                               isLowest
-                                ? "text-emerald-600 dark:text-emerald-500"
+                                ? "text-emerald-600"
                                 : "text-muted-foreground"
                             )}
                           >
@@ -376,9 +376,9 @@ function RouteComponent() {
                             className={cn(
                               "px-2 py-1.5 border-b text-right tabular-nums",
                               isLowestOverall &&
-                                "bg-emerald-50/80 dark:bg-emerald-950/30",
+                                "bg-emerald-50/80",
                               isLowestForAsset &&
-                                "text-emerald-700 dark:text-emerald-400 font-medium"
+                                "text-emerald-700 font-medium"
                             )}
                           >
                             {hasEvaluation && bid !== undefined
@@ -404,7 +404,7 @@ function RouteComponent() {
                         className={cn(
                           "px-2 py-2 border-t-2 text-right tabular-nums text-xs",
                           isLowest &&
-                            "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400"
+                            "bg-emerald-100 text-emerald-700"
                         )}
                       >
                         {formatCurrency(contractor.total, packageCurrency)}

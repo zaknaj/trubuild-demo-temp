@@ -968,7 +968,7 @@ function CommercialSetupSheet({
                       className={cn(
                         "rounded-lg border p-3 transition-colors",
                         hasFiles &&
-                          "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
+                          "border-emerald-500 bg-emerald-50/50"
                       )}
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -1002,7 +1002,7 @@ function CommercialSetupSheet({
                 })}
 
                 {!canRunEvaluation && (
-                  <p className="text-sm text-amber-600 dark:text-amber-500">
+                  <p className="text-sm text-amber-600">
                     At least 2 vendors must have files to run evaluation
                   </p>
                 )}
@@ -1148,7 +1148,7 @@ function BOQTable({
   // Helper to get column styling for lowest bidder
   const getColumnClass = (contractorId: string, baseClass: string = "") => {
     const isLowest = contractorId === lowestBidderId
-    return cn(baseClass, isLowest && "bg-emerald-50/80 dark:bg-emerald-950/30")
+    return cn(baseClass, isLowest && "bg-emerald-50/80")
   }
 
   // Handle cell click for issues
@@ -1278,7 +1278,7 @@ function BOQTable({
                         key={contractor.contractorId}
                         className={cn(
                           "text-right px-2 py-1.5 border-b font-medium w-[100px]",
-                          isLowest && "bg-emerald-100/80 dark:bg-emerald-900/40"
+                          isLowest && "bg-emerald-100/80"
                         )}
                       >
                         <div className="flex flex-col items-end gap-0.5">
@@ -1286,7 +1286,7 @@ function BOQTable({
                             className={cn(
                               "truncate max-w-[100px] text-xs",
                               isLowest &&
-                                "text-emerald-700 dark:text-emerald-400"
+                                "text-emerald-700"
                             )}
                           >
                             {contractor.contractorName}
@@ -1295,7 +1295,7 @@ function BOQTable({
                             className={cn(
                               "text-[10px] font-normal",
                               isLowest
-                                ? "text-emerald-600 dark:text-emerald-500"
+                                ? "text-emerald-600"
                                 : "text-muted-foreground"
                             )}
                           >
@@ -1445,43 +1445,43 @@ function BOQTable({
                                       const getCellStyles = () => {
                                         // Custom override styling (purple)
                                         if (isNormalized && hasCustomOverride) {
-                                          return "bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 cursor-pointer"
+                                          return "bg-purple-50 text-purple-600 cursor-pointer"
                                         }
                                         // Included items (gray)
                                         if (issue === "included") {
-                                          return "bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400"
+                                          return "bg-slate-100 text-slate-500"
                                         }
                                         // Arithmetic error - as received (orange/red with warning)
                                         if (
                                           issue === "arithmetic_error" &&
                                           !isNormalized
                                         ) {
-                                          return "bg-orange-50 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400"
+                                          return "bg-orange-50 text-orange-600"
                                         }
                                         // Arithmetic error - normalized (blue, clickable)
                                         if (
                                           issue === "arithmetic_error" &&
                                           isNormalized
                                         ) {
-                                          return "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 italic cursor-pointer"
+                                          return "bg-blue-50 text-blue-600 italic cursor-pointer"
                                         }
                                         // Unpriced - as received (amber)
                                         if (
                                           issue === "unpriced" &&
                                           !isNormalized
                                         ) {
-                                          return "bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400"
+                                          return "bg-amber-50 text-amber-600"
                                         }
                                         // Unpriced - normalized (blue, clickable)
                                         if (
                                           issue === "unpriced" &&
                                           isNormalized
                                         ) {
-                                          return "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 italic cursor-pointer"
+                                          return "bg-blue-50 text-blue-600 italic cursor-pointer"
                                         }
                                         // Lowest bidder highlight
                                         if (isLowest) {
-                                          return "bg-emerald-50/80 dark:bg-emerald-950/30"
+                                          return "bg-emerald-50/80"
                                         }
                                         return ""
                                       }
@@ -1571,7 +1571,7 @@ function BOQTable({
                         className={cn(
                           "px-2 py-2 border-t-2 text-right tabular-nums text-xs",
                           isLowest &&
-                            "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400"
+                            "bg-emerald-100 text-emerald-700"
                         )}
                       >
                         {formatCurrency(contractor.totalAmount)}
@@ -1818,9 +1818,9 @@ function ItemIssueSheet({
               className={cn(
                 "p-4 rounded-lg text-sm border-l-4",
                 issue === "unpriced" &&
-                  "bg-amber-50 dark:bg-amber-950/30 border-amber-400 text-amber-800 dark:text-amber-200",
+                  "bg-amber-50 border-amber-400 text-amber-800",
                 issue === "arithmetic_error" &&
-                  "bg-orange-50 dark:bg-orange-950/30 border-orange-400 text-orange-800 dark:text-orange-200"
+                  "bg-orange-50 border-orange-400 text-orange-800"
               )}
             >
               {getIssueDescription()}
@@ -1836,8 +1836,8 @@ function ItemIssueSheet({
                 : "Lowest"}
               )
             </Label>
-            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-              <span className="text-xl font-semibold text-blue-700 dark:text-blue-300">
+            <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+              <span className="text-xl font-semibold text-blue-700">
                 {normalizedPrice != null
                   ? formatCurrency(normalizedPrice)
                   : "—"}

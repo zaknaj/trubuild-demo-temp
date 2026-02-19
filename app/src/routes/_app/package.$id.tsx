@@ -1,8 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
-import { PackageSidebar } from "@/components/PackageSidebar"
-import { PackageSettingsDialog } from "@/components/PackageSettingsDialog"
+import { useMemo } from "react"
 import {
   packageDetailQueryOptions,
   packageMembersQueryOptions,
@@ -48,39 +46,15 @@ export const Route = createFileRoute("/_app/package/$id")({
 
 function RouteComponent() {
   const { id } = Route.useParams()
-  const { data: accessData } = useSuspenseQuery(packageAccessQueryOptions(id))
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<
-    "general" | "members" | "activity"
-  >("general")
-
-  const canEdit = accessData.access === "full"
-
-  const openSettings = (
-    tab: "general" | "members" | "activity" = "general"
-  ) => {
-    setSettingsTab(tab)
-    setSettingsOpen(true)
-  }
+  useSuspenseQuery(packageAccessQueryOptions(id))
 
   const outlet = useMemo(() => <Outlet />, [id])
 
   return (
-    <>
-      <div className="flex flex-1 overflow-hidden h-full">
-        <PackageSidebar packageId={id} onSettingsClick={openSettings} />
-        <div className="flex-1 flex flex-col overflow-hidden rounded-xl content-shadow">
-          {outlet}
-        </div>
+    <div className="flex flex-1 h-full">
+      <div className="flex-1">
+        {outlet}
       </div>
-      {canEdit && (
-        <PackageSettingsDialog
-          packageId={id}
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          defaultTab={settingsTab}
-        />
-      )}
-    </>
+    </div>
   )
 }

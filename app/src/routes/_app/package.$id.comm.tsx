@@ -311,7 +311,7 @@ function RouteComponent() {
                         className={cn(
                           "rounded-lg border p-3 transition-colors",
                           hasFiles &&
-                            "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
+                            "border-emerald-500 bg-emerald-50/50"
                         )}
                       >
                         <div className="flex items-center gap-2 mb-2">
@@ -757,7 +757,7 @@ function CommercialSetupSheet({
                       className={cn(
                         "rounded-lg border p-3 transition-colors",
                         hasFiles &&
-                          "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
+                          "border-emerald-500 bg-emerald-50/50"
                       )}
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -793,7 +793,7 @@ function CommercialSetupSheet({
                 })}
 
                 {!canRunEvaluation && (
-                  <p className="text-sm text-amber-600 dark:text-amber-500">
+                  <p className="text-sm text-amber-600">
                     At least 2 vendors must have files to run evaluation
                   </p>
                 )}
