@@ -1027,10 +1027,10 @@ export function VendorComparison({
           </div>
 
           <div className="overflow-auto max-h-[calc(100vh-200px)]">
-            <table className="w-full caption-bottom text-sm">
+            <table className="w-full table-fixed caption-bottom text-sm">
               <thead className="sticky top-0 z-10 [&_tr]:border-b">
                 <tr className="border-b backdrop-blur-xl bg-card/85 shadow-[0_1px_0_0_var(--border)] supports-[backdrop-filter]:bg-card/60">
-                  <th className="text-foreground h-auto px-2 text-left align-middle font-medium whitespace-nowrap min-w-[340px] pl-4 text-[10px] text-muted-foreground/70 uppercase tracking-wider">
+                  <th className="text-foreground h-auto px-2 text-left align-middle font-medium whitespace-normal break-words [overflow-wrap:anywhere] pl-4 text-[10px] text-muted-foreground/70 uppercase tracking-wider w-[34%]">
                     Description
                   </th>
                   <th className="text-foreground h-auto px-2 text-right align-middle font-medium whitespace-nowrap w-14 text-[10px] text-muted-foreground/70 uppercase tracking-wider">
@@ -1061,13 +1061,13 @@ export function VendorComparison({
                       <th
                         key={v}
                         className={cn(
-                          "h-auto px-2 text-right align-middle font-medium whitespace-nowrap min-w-[130px] py-2.5",
+                          "h-auto px-2 text-right align-middle font-medium py-2.5",
                           isLo ? "bg-emerald-50/60" : ""
                         )}
                       >
                         <div
                           className={cn(
-                            "text-[11px] font-semibold",
+                            "text-[11px] font-semibold whitespace-normal break-words [overflow-wrap:anywhere]",
                             isLo
                               ? "text-emerald-700"
                               : "text-muted-foreground"
@@ -1288,7 +1288,7 @@ function DivisionRows({
                 <ChevronRight className="size-4" />
               )}
             </span>
-            <span className="text-[13px] font-semibold">
+            <span className="text-[13px] font-semibold whitespace-normal break-words [overflow-wrap:anywhere]">
               {d.division_name}
             </span>
             <span className="text-[10px] text-muted-foreground/60 tabular-nums">
@@ -1415,7 +1415,7 @@ function GroupingRows({
                 <ChevronRight className="size-3.5" />
               )}
             </span>
-            <span className="text-[12px] font-medium">
+            <span className="text-[12px] font-medium whitespace-normal break-words [overflow-wrap:anywhere]">
               {grouping.grouping_name}
             </span>
             <span className="text-[10px] text-muted-foreground/50 tabular-nums">
@@ -1503,7 +1503,7 @@ function SubGroupingRows({
                 <ChevronRight className="size-3" />
               )}
             </span>
-            <span className="text-[11px] font-medium text-muted-foreground">
+            <span className="text-[11px] font-medium text-muted-foreground whitespace-normal break-words [overflow-wrap:anywhere]">
               {sub.name}
             </span>
             <span className="text-[10px] text-muted-foreground/60">
@@ -1573,7 +1573,7 @@ function LineItemRow({
           <span className="font-mono text-[10px] text-muted-foreground w-10 shrink-0 pt-0.5 text-right">
             {item.item_id}
           </span>
-          <span className="text-[12px] text-foreground/80 leading-relaxed">
+          <span className="text-[12px] text-foreground/80 leading-relaxed whitespace-normal break-words [overflow-wrap:anywhere]">
             {item.item_description}
           </span>
         </div>
