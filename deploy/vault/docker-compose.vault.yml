@@ -1,0 +1,55 @@
+# ==============================================================================
+# TruBuild Vault - Standalone Secrets Management
+# ==============================================================================
+# Usage:
+#   cd deploy && docker compose -f vault/docker-compose.vault.yml up -d
+#   Or: make vault-up
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # HashiCorp Vault - Secrets Management
+  # ----------------------------------------------------------------------------
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: trubuild-vault
+    restart: unless-stopped
+    networks:
+      - vault-network
+    ports:
+      - "${VAULT_PORT:-8200}:8200"
+    environment:
+      VAULT_ADDR: "http://0.0.0.0:8200"
+      VAULT_API_ADDR: "http://vault:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-data:/vault/data
+      - vault-logs:/vault/logs
+      - ./config:/vault/config
+      - ./policies:/vault/policies:ro
+      - ./scripts:/vault/scripts:ro
+    entrypoint: ["vault"]
+    command: ["server", "-config=/vault/config/vault.hcl"]
+    healthcheck:
+      test: ["CMD", "sh", "-c", "vault status -address=http://127.0.0.1:8200 || [ $? -eq 2 ]"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+# ==============================================================================
+# Networks - Standalone (not shared with main TruBuild services)
+# ==============================================================================
+networks:
+  vault-network:
+    driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  vault-data:
+    driver: local
+  vault-logs:
+    driver: local

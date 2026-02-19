@@ -1,0 +1,339 @@
+# ==============================================================================
+# TruBuild - Base Docker Compose Configuration
+# ==============================================================================
+# Usage:
+#   Dev:     docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up
+#   Staging: docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.staging.yml up
+#   Prod:    docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml up
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # TruBuild App - TanStack Start Frontend
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/docker/Dockerfile.app
+    image: trubuild-app:${TAG:-latest}
+    restart: unless-stopped
+    networks:
+      - trubuild-internal
+      - trubuild-external
+
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DATABASE_URL=${DATABASE_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3000}
+      - ENGINE_URL=${ENGINE_URL:-http://engine:5000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/login",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # TruBuild Engine - Python AI/ML Backend
+  # ----------------------------------------------------------------------------
+  engine:
+    build:
+      context: ..
+      dockerfile: deploy/docker/Dockerfile.engine
+    image: trubuild-engine:${TAG:-latest}
+    restart: unless-stopped
+    networks:
+      - trubuild-internal
+      - trubuild-external
+    # Memory and swap configuration
+    # Engine requires up to 50GB swap for large document processing
+    # Note: Host must have swap configured (see README)
+    mem_limit: 8g
+    memswap_limit: -1 # Unlimited swap (uses all available host swap)
+
+    environment:
+      - TRUBUILD_DISABLE_SSL=true
+      # Vault configuration (secrets fetched at runtime)
+      - VAULT_ADDR=${VAULT_ADDR:-http://34.147.36.68:8200}
+      - VAULT_ROLE_ID=${VAULT_ROLE_ID:-}
+      - VAULT_SECRET_ID=${VAULT_SECRET_ID:-}
+      - VAULT_TOKEN=${VAULT_TOKEN:-}
+      - TRUBUILD_REGION=${TRUBUILD_REGION:-ksa}
+      - TRUBUILD_ENV=${TRUBUILD_ENV:-dev}
+    volumes:
+      - engine-logs:/app/logs
+      - engine-process-logs:/home/trubuild/process_logs
+    depends_on:
+      minio:
+        condition: service_healthy
+    # healthcheck:
+    #   test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/ping"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 15s
+
+  # ----------------------------------------------------------------------------
+  # Engine Worker - Job queue processor (polls DB, runs tech_rfp etc.)
+  # ----------------------------------------------------------------------------
+  engine-worker:
+    # Uses the same image as engine service (built locally)
+    image: trubuild-engine:${TAG:-latest}
+    restart: unless-stopped
+    command: ["python", "-m", "utils.db.worker"]
+    networks:
+      - trubuild-internal
+      - trubuild-external
+    mem_limit: 8g
+    memswap_limit: -1
+    environment:
+      - TRUBUILD_DISABLE_SSL=true
+      - VAULT_ADDR=${VAULT_ADDR:-http://34.147.36.68:8200}
+      - VAULT_ROLE_ID=${VAULT_ROLE_ID:-}
+      - VAULT_SECRET_ID=${VAULT_SECRET_ID:-}
+      - VAULT_TOKEN=${VAULT_TOKEN:-}
+      - TRUBUILD_REGION=${TRUBUILD_REGION:-ksa}
+      - TRUBUILD_ENV=${TRUBUILD_ENV:-dev}
+    volumes:
+      - engine-logs:/app/logs
+      - engine-process-logs:/home/trubuild/process_logs
+    depends_on:
+      engine:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # Nginx - Reverse Proxy & TLS Termination
+  # ----------------------------------------------------------------------------
+  nginx:
+    build:
+      context: ..
+      dockerfile: deploy/docker/Dockerfile.nginx
+    image: trubuild-nginx:${TAG:-latest}
+    restart: unless-stopped
+    networks:
+      - trubuild-internal
+      - trubuild-external
+    depends_on:
+      app:
+        condition: service_healthy
+      # Note: Engine is internal only - app communicates with it directly
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # ----------------------------------------------------------------------------
+  # PostgreSQL - Primary Database
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    networks:
+      - trubuild-internal
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-trubuild}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-trubuild}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-trubuild} -d ${POSTGRES_DB:-trubuild}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # MinIO - S3-Compatible Object Storage
+  # ----------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    networks:
+      - trubuild-internal
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-trubuild}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      # Server-side encryption key (base64 encoded 32-byte key)
+      - MINIO_KMS_SECRET_KEY=${MINIO_KMS_SECRET_KEY:-}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # MinIO Init - Create default buckets on startup
+  # ----------------------------------------------------------------------------
+  minio-init:
+    image: minio/mc:latest
+    networks:
+      - trubuild-internal
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-trubuild}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./minio/init-buckets.sh:/init-buckets.sh:ro
+    entrypoint: ["/bin/sh", "/init-buckets.sh"]
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+
+  # ----------------------------------------------------------------------------
+  # MinIO Backup - Daily cron job to backup MinIO data
+  # ----------------------------------------------------------------------------
+  minio-backup:
+    build:
+      context: ..
+      dockerfile: deploy/docker/Dockerfile.minio-backup
+    image: trubuild-minio-backup:${TAG:-latest}
+    restart: unless-stopped
+    networks:
+      - trubuild-internal
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-trubuild}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - minio-backups:/backups
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # Loki - Log Aggregation & Storage
+  # ----------------------------------------------------------------------------
+  loki:
+    image: grafana/loki:2.9.4
+    restart: unless-stopped
+    networks:
+      - trubuild-internal
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-trubuild}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml -config.expand-env=true
+    depends_on:
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ----------------------------------------------------------------------------
+  # Promtail - Log Collection Agent
+  # ----------------------------------------------------------------------------
+  promtail:
+    image: grafana/promtail:2.9.4
+    restart: unless-stopped
+    networks:
+      - trubuild-internal
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      # Docker container logs (via API through socket)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Host system logs
+      - /var/log:/var/log:ro
+      # Engine application logs
+      - engine-logs:/engine-logs:ro
+      - engine-process-logs:/engine-process-logs:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # Grafana - Log Visualization & Dashboards
+  # ----------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.3.1
+    restart: unless-stopped
+    networks:
+      - trubuild-internal
+      - trubuild-external
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3001}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      # Disable analytics
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      # Allow embedding in iframes (if needed)
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  trubuild-internal:
+    driver: bridge
+    internal: true
+  trubuild-external:
+    driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  postgres-data:
+    driver: local
+  minio-data:
+    driver: local
+  minio-backups:
+    driver: local
+  engine-logs:
+    driver: local
+  engine-process-logs:
+    driver: local
+  # Logging stack volumes
+  loki-data:
+    driver: local
+  grafana-data:
+    driver: local

@@ -1,0 +1,36 @@
+# ==============================================================================
+# MinIO Backup Container
+# Runs daily cron job to backup MinIO data
+# Uses supercronic (container-friendly cron alternative)
+# ==============================================================================
+
+FROM alpine:3.19
+
+# Install dependencies
+RUN apk add --no-cache curl bash
+
+# Download and install MinIO client (mc)
+RUN curl -o /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc && \
+    chmod +x /usr/local/bin/mc
+
+# Install supercronic (cron for containers - no root/setpgid required)
+ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.29/supercronic-linux-amd64 \
+    SUPERCRONIC_SHA1SUM=cd48d45c4b10f3f0bfdd3a57d054cd05ac96812b
+
+RUN curl -fsSLO "$SUPERCRONIC_URL" && \
+    echo "${SUPERCRONIC_SHA1SUM}  supercronic-linux-amd64" | sha1sum -c - && \
+    chmod +x supercronic-linux-amd64 && \
+    mv supercronic-linux-amd64 /usr/local/bin/supercronic
+
+# Copy backup script
+COPY deploy/minio/backup.sh /backup.sh
+RUN chmod +x /backup.sh
+
+# Copy crontab
+COPY deploy/minio/crontab /app/crontab
+
+# Create backup directory
+RUN mkdir -p /backups
+
+# Run supercronic with the crontab
+CMD ["supercronic", "/app/crontab"]

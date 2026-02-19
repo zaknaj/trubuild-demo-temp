@@ -1,0 +1,14 @@
+# ==============================================================================
+# TruBuild Certbot - SSL Certificate Management
+# Based on certbot/certbot with Docker CLI for nginx reload
+# ==============================================================================
+
+FROM certbot/certbot:latest
+
+# Install Docker CLI to reload nginx after certificate renewal
+RUN apk add --no-cache docker-cli
+
+# Copy deploy hook and entrypoint (hook will be copied into mounted volume at runtime)
+COPY deploy/scripts/certbot-deploy-hook.sh /usr/local/bin/certbot-deploy-hook.sh
+COPY deploy/scripts/certbot-entrypoint.sh /usr/local/bin/certbot-entrypoint.sh
+RUN chmod +x /usr/local/bin/certbot-deploy-hook.sh /usr/local/bin/certbot-entrypoint.sh

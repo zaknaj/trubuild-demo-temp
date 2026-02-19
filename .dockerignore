@@ -1,0 +1,89 @@
+# ==============================================================================
+# Docker Build Ignore File - TruBuild Monorepo
+# ==============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+LICENSE
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (secrets should come from Vault)
+.env
+.env.*
+!.env.example
+
+# Node.js (app)
+app/node_modules/
+app/.output/
+app/dist/
+app/.vinxi/
+app/.cache/
+
+# Python (engine)
+engine/__pycache__/
+engine/*.pyc
+engine/*.pyo
+engine/*.pyd
+engine/.Python
+engine/venv/
+engine/env/
+engine/.venv/
+engine/*.egg-info/
+engine/.eggs/
+engine/build/
+engine/dist/
+
+# Test files
+**/*.test.*
+**/*.spec.*
+**/__tests__/
+**/test/
+**/tests/
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+engine/logs/
+
+# Local development
+*.local
+.turbo/
+
+# SSL certificates (should be mounted at runtime)
+# Note: prv.pem and pub.pem are needed for encryption, mounted separately
+crt.pem
+key.pem
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Infrastructure as code
+infra/
+
+# GitHub workflows
+.github/
+
+# Cursor IDE
+.cursor/

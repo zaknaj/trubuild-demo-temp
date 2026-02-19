@@ -1,0 +1,50 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "dynamic_color": {
+            "()": "utils.core.log.DynamicPrefixFormatter",
+            "color": true
+        },
+        "dynamic_plain": {
+            "()": "utils.core.log.DynamicPrefixFormatter",
+            "color": false
+        }
+    },
+    "handlers": {
+        "activity_ansi": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "INFO",
+            "formatter": "dynamic_color",
+            "filename": "~/process_logs/activity.log",
+            "maxBytes": 10485760,
+            "backupCount": 3,
+            "encoding": "utf-8",
+            "delay": true
+        },
+        "activity_plain": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "INFO",
+            "formatter": "dynamic_plain",
+            "filename": "~/process_logs/activity_plain.log",
+            "maxBytes": 10485760,
+            "backupCount": 3,
+            "encoding": "utf-8",
+            "delay": true
+        }
+    },
+    "loggers": {
+        "TruBuildBE": {
+            "level": "INFO",
+            "handlers": [
+                "activity_ansi",
+                "activity_plain"
+            ],
+            "propagate": false
+        }
+    },
+    "root": {
+        "level": "WARNING",
+        "handlers": []
+    }
+}

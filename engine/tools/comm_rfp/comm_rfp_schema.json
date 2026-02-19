@@ -1,0 +1,153 @@
+{
+  "type": "object",
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "nullable": true,
+      "description": "The official name or title of the construction project as stated in the BOQ document. "
+    },
+    "contractor": {
+      "type": "string",
+      "nullable": true,
+      "description": "The name of the contractor, bidder, or company responsible for pricing or executing the BOQ."
+    },
+    "project_total_amount": {
+      "type": "string",
+      "nullable": true,
+      "description": "The total contract value of the project.\n"
+    },
+    "divisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "division_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "The name of the division or trade (e.g., SITE WORK, CONCRETE WORK, MASONRY.. )."
+          },
+          "division_total_amount": {
+            "type": "string",
+            "nullable": true,
+            "description": "The total cost of all groups and items under this division."
+          },
+          "grouping": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "grouping_name": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "The descriptive name of the group (e.g., Site Preparation, Earthworks)."
+                },
+                "grouping_total_amount": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "The total cost of all line items in this grouping."
+                },
+                "sub_groupings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sub_grouping_name": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The name of the sub-grouping (e.g., 'Site clearance; including all ancillary works as necessary', 'Anti-Termite Treatment')."
+                      },
+                      "line_items": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "item_id": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "A unique identifier for the item (system-generated)."
+                            },
+                            "item_description": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "A detailed description of the work, material, or service for this item."
+                            },
+                            "item_quantity": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "The measured quantity of the item."
+                            },
+                            "item_unit": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "The unit of measurement (e.g., m, m², m³, pcs, lot)."
+                            },
+                            "item_rate": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "The cost per unit of measurement."
+                            },
+                            "item_rate_raw": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "Raw rate value from Excel (e.g., 'Included', 'Excluded', 'N/A') when not a number."
+                            },
+                            "item_amount": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "The total amount for this line item (quantity × rate), extracted from the BOQ."
+                            },
+                            "item_amount_raw": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "Raw amount value from Excel (e.g., 'Included', 'Excluded', 'N/A') when not a number."
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "item_id",
+                            "item_description",
+                            "item_quantity",
+                            "item_unit",
+                            "item_rate",
+                            "item_amount"
+                          ]
+                        },
+                        "description": "Each item represents a single measurable BOQ line item."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "sub_grouping_name",
+                      "line_items"
+                    ]
+                  },
+                  "description": "Sub-groupings within a grouping that categorize line items (e.g., 'Site clearance', 'Anti-Termite Treatment'). No total amount associated."
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "grouping_name",
+                "sub_groupings"
+              ]
+            },
+            "description": "Each group is a subcategory within a division, usually representing a logical breakdown such as work type, location, or construction element."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "division_name",
+          "division_total_amount",
+          "grouping"
+        ]
+      },
+      "description": "Each division represents a major scope or trade, commonly aligned with BOQ sections or standards (e.g., SITE WORK, CONCRETE WORK, MASONRY.. )."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "project_name",
+    "contractor",
+    "project_total_amount",
+    "divisions"
+  ]
+}

@@ -1,0 +1,588 @@
+openapi: 3.0.0
+info:
+  title: TrubuildBE
+  version: 1.0.0
+  description: |
+    This is the backend API for TruBuild tools. All responses are returned as an encrypted envelope { data, key, nonce, tag }. All POST request bodies must be sent as { data, key, nonce, tag }.
+    GET requests use plaintext query params; responses are still encrypted. Error responses (400/500) are also encrypted envelopes.
+
+servers:
+  - url: 'https://d-api.trubuild.io:5000'
+  - url: 'https://s-api.trubuild.io:5000'
+  - url: 'https://api.trubuild.io:5000'
+
+paths:
+  /ping:
+    get:
+      summary: Ping the API
+      description: |
+        Health check endpoint. Returns `"status": "online"` inside the standard response envelope.
+      responses:
+        '200':
+          description: API is online and responding
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    example: ""
+                  status:
+                    type: string
+                    example: online
+                  error:
+                    type: string
+                    example: ""
+                  tokens:
+                    type: integer
+                    example: 0
+                  toolData:
+                    type: object
+
+
+
+  /chat:
+    post:
+      summary: Chat endpoint
+      description: |
+        Accepts a chat prompt and returns a standard TruBuild response envelope.
+        Only POST is supported.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - projectId
+                - toolData
+                - countryCode
+              properties:
+                userName:
+                  type: string
+                  description: Optional user name
+                userId:
+                  type: string
+                  description: Echoed back in the response
+                projectName:
+                  type: string
+                  description: Optional project name
+                projectId:
+                  type: string
+                  description: Must be provided or a 400 is returned
+                countryCode:
+                  type: string
+                  default: USA
+                  description: ISO country code
+                companyName:
+                  type: string
+                  description: Optional company name
+                userType:
+                  type: string
+                  default: ""
+                  description: Optional user type
+                toolData:
+                  type: object
+                  required:
+                    - prompt
+                  properties:
+                    prompt:
+                      type: string
+                      description: The user’s chat prompt
+                    conversationId:
+                      type: string
+                      default: default
+                      description: ID for conversation context
+                    internet:
+                      type: boolean
+                      default: false
+                      description: Whether to allow internet access
+                    documents:
+                      type: array
+                      description: Array of document metadata to include
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          url:
+                            type: string
+      responses:
+        '200':
+          description: Standard wrapped response from any tool
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    description: Echoed from request
+                  status:
+                    type: string
+                    enum: [done, in progress, error]
+                    description: Status of tool execution
+                  error:
+                    type: string
+                    description: Error message, empty string if no error
+                  tokens:
+                    type: integer
+                    description: Number of tokens used, 0 if unknown
+                  toolData:
+                    type: object
+                    description: Tool-specific payload (chatbot output, etc.)
+                    properties:
+                      answer:
+                        type: string
+                        description: The chatbot’s answer
+        '400':
+          description: Bad Request – missing projectId or prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+
+        '500':
+          description: Internal server error – tool crashed or raised exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+
+  /review:
+    get:
+      summary: Get contract review results
+      description: |
+        Fetch the result of a contract analysis + review job (if already completed).
+        If the job is still running or results are missing, the status will be `in progress`.
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: countryCode
+          in: query
+          schema:
+            type: string
+            default: USA
+        - name: contractType
+          in: query
+          schema:
+            type: string
+            default: NEC
+        - name: paymentOption
+          in: query
+          schema:
+            type: string
+            default: A
+        - name: governedLaw
+          in: query
+          schema:
+            type: string
+            default: USA
+        - name: userType
+          in: query
+          schema:
+            type: string
+            default: client
+      responses:
+        '200':
+          description: Contract review status or completed results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [done, in progress, error]
+                  error:
+                    type: string
+                  tokens:
+                    type: integer
+                  toolData:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [in progress, completed, error]
+                      overview:
+                        type: object
+                        description: Summary of contract analysis (if ready)
+                      recommendation:
+                        type: object
+                        description: Contract recommendations (if ready)
+        '400':
+          description: Bad Request – missing projectId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+    post:
+      summary: Start contract analysis + review
+      description: |
+        Initiates a background process to analyze and review uploaded contracts for a given project.
+        Returns immediately with status = `in progress`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - projectId
+                - toolData
+              properties:
+                projectId:
+                  type: string
+                countryCode:
+                  type: string
+                  default: USA
+                userType:
+                  type: string
+                  default: client
+                toolData:
+                  type: object
+                  properties:
+                    contractType:
+                      type: string
+                      default: NEC
+                    paymentOption:
+                      type: string
+                      default: A
+                    governedLaw:
+                      type: string
+                      default: USA
+      responses:
+        '200':
+          description: Background job started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [done, in progress, error]
+                  error:
+                    type: string
+                  tokens:
+                    type: integer
+                  toolData:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: in progress
+                      message:
+                        type: string
+                        example: Contract analysis and review started for project XYZ
+        '400':
+          description: Bad Request – missing projectId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+
+  /tech-rfp:
+    get:
+      summary: RFP analysis tool (GET)
+      description: |
+        Fetch the results of a tech-RFP operation depending on the `analysisType`.
+        Returns `in progress` if not yet complete.
+        #### Available `analysisType` values for GET (differs from POST):
+        - `analysis`: Fetch full RFP evaluation result.
+        - `summary`: Fetch the summary of uploaded RFP documents.
+        - `report`: Fetch the technical report based on evaluation results.
+        - `evaluation`: Fetch the evaluation generated either by POST generate-eval or extract-eval
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: countryCode
+          in: query
+          schema:
+            type: string
+            default: USA
+        - name: analysisType
+          in: query
+          schema:
+            type: string
+            enum: [summary, evaluation, analysis, report]
+      responses:
+        '200':
+          description: Response envelope with status or retrieved results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [done, in progress, error]
+                  error:
+                    type: string
+                  tokens:
+                    type: integer
+                  toolData:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [in progress, completed, error]
+                      data:
+                        type: object
+                        description: Retrieved results or summaries
+        '400':
+          description: Bad Request – missing projectId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+    post:
+      summary: Tech-RFP analysis and sub-tools
+      description: |
+        Runs one of several Tech-RFP analysis tools based on the `analysisType` provided.
+        #### Available `analysisType` values:
+        - `analysis`: Run full RFP contractor evaluation using uploaded tender responses and criteria.
+        - `summary`: Generate a summary of uploaded RFP documents.
+        - `report`: Generate a technical report based on evaluation results.
+        - `extract-eval`: Extract uploaded evaluation criteria.
+        - `generate-eval`: Generate evaluation criteria from uploaded RFPs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId, toolData]
+              properties:
+                projectId:
+                  type: string
+                countryCode:
+                  type: string
+                  default: USA
+                toolData:
+                  type: object
+                  required: [analysisType]
+                  properties:
+                    analysisType:
+                      type: string
+                      enum: [summary, report, analysis, extract-eval, generate-eval]
+                      description: |
+                        The type of analysis to perform. Determines backend logic and output structure.
+      responses:
+        '200':
+          description: Tool launched (or result retrieved), wrapped in TruBuild envelope
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [done, in progress, error]
+                  error:
+                    type: string
+                  tokens:
+                    type: integer
+                  toolData:
+                    type: object
+                    description: |
+                      Tool-specific payload depending on analysisType.
+
+                      Example:
+                      {
+                        "status": "completed",
+                        "data": { ... }  // varies per analysisType
+                      }
+                    properties:
+                      status:
+                        type: string
+                        enum: [in progress, completed, error]
+                      data:
+                        type: object
+
+        '400':
+          description: Bad Request – missing projectId or toolData.analysisType
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /comm-rfp:
+    get:
+      summary: Commercial RFP tool (GET)
+      description: |
+        Retrieves the result of a Commercial RFP process based on `analysisType`.
+
+        - If `analysisType=summary`, returns the summary generated from RFP documents.
+        - If `analysisType=analysis`, retrieves commercial evaluation results in JSON format.
+
+        If results are not yet ready, returns `status: in progress`.
+
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: countryCode
+          in: query
+          schema:
+            type: string
+            default: USA
+        - name: analysisType
+          in: query
+          schema:
+            type: string
+            enum: [summary, analysis]
+
+
+      responses:
+        '200':
+          description: Wrapped tool response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [done, in progress, error]
+                  error:
+                    type: string
+                  tokens:
+                    type: integer
+                  toolData:
+                    type: object
+                    description: Result payload from either summary or evaluation
+
+        '400':
+          description: Missing projectId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+    post:
+      summary: Start Commercial RFP analysis
+      description: |
+        Starts a process to analyze a commercial RFP project.
+        If `analysisType=summary`, generates a summary of the commercial RFP documents.
+        If `analysisType=analysis`, processes the full commercial evaluation and uploads results.
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - projectId
+                - toolData
+              properties:
+                projectId:
+                  type: string
+                countryCode:
+                  type: string
+                  default: USA
+                toolData:
+                  type: object
+                  required: [analysisType]
+                  properties:
+                    analysisType:
+                      type: string
+                      enum: [summary, analysis]
+                      description: |
+                        - `summary`: Run RFP summarization for commercial project.
+                        - `analysis`: Run commercial RFP evaluation.
+
+
+      responses:
+        '200':
+          description: Commercial evaluation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [in progress]
+                  error:
+                    type: string
+                  tokens:
+                    type: integer
+                  toolData:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: in progress
+                      message:
+                        type: string
+                        example: Commercial evaluation started for project ABC123
+        '400':
+          description: Bad Request – missing projectId or toolData.analysisType
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+
+components:
+  schemas:
+    ErrorEnvelope:
+      type: object
+      properties:
+        userId:
+          type: string
+        status:
+          type: string
+        error:
+          type: string
+        tokens:
+          type: integer
+        toolData:
+          type: object
+          nullable: true

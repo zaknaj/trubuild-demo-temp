@@ -1,0 +1,88 @@
+# ==============================================================================
+# Promtail Remote Configuration
+# ==============================================================================
+# Configuration for Promtail agents running on remote servers (Vault, DB, etc.)
+# Collects system logs and ships them to the central Loki instance.
+#
+# Environment variables (set in docker-compose or .env):
+#   LOKI_URL    - Central Loki push endpoint
+#   SERVER_NAME - Identifier for this server
+# ==============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: ${LOKI_URL}/loki/api/v1/push
+
+scrape_configs:
+  # --------------------------------------------------------------------------
+  # Host System Logs - Syslog
+  # --------------------------------------------------------------------------
+  - job_name: syslog
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog
+          host: ${SERVER_NAME}
+          __path__: /var/log/syslog
+
+  # --------------------------------------------------------------------------
+  # Host System Logs - Auth/SSH
+  # --------------------------------------------------------------------------
+  - job_name: ssh
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: ssh
+          host: ${SERVER_NAME}
+          __path__: /var/log/auth.log
+
+  # --------------------------------------------------------------------------
+  # Host System Logs - Kernel (includes firewall/iptables)
+  # --------------------------------------------------------------------------
+  - job_name: kernel
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: kernel
+          host: ${SERVER_NAME}
+          __path__: /var/log/kern.log
+
+  # --------------------------------------------------------------------------
+  # Cloud Security / Fail2ban Logs (if present)
+  # --------------------------------------------------------------------------
+  - job_name: fail2ban
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: fail2ban
+          host: ${SERVER_NAME}
+          __path__: /var/log/fail2ban.log
+
+  # --------------------------------------------------------------------------
+  # Docker Container Logs (for Vault/DB containers on this server)
+  # --------------------------------------------------------------------------
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Extract container name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: container
+      # Extract service name from compose label
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: service
+      # Add server hostname label
+      - target_label: host
+        replacement: ${SERVER_NAME}

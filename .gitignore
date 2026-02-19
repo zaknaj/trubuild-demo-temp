@@ -1,0 +1,13 @@
+.DS_Store
+
+# Vault credentials (NEVER commit these!)
+deploy/.vault-keys
+.vault-keys
+
+# Environment files with secrets
+.env
+deploy/.env
+
+# Engine specific files
+gcp-credentials.json
+engine/tests

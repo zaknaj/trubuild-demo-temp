@@ -1,0 +1,42 @@
+# ==============================================================================
+# TruBuild - Remote Promtail Agent
+# ==============================================================================
+# Deploy this on Vault and DB servers to ship logs to the central Loki instance.
+#
+# Usage:
+#   1. Copy this file + promtail-remote.yml to the remote server
+#   2. Set LOKI_URL to point to the main server's Loki instance
+#   3. Run: docker compose -f docker-compose.promtail.yml up -d
+#
+# Environment Variables:
+#   LOKI_URL    - URL of the central Loki instance (e.g. http://10.0.0.1:3100)
+#   SERVER_NAME - Hostname label for this server (e.g. vault-server, db-server)
+# ==============================================================================
+
+services:
+  promtail:
+    image: grafana/promtail:2.9.4
+    restart: always
+    volumes:
+      - ./promtail-remote.yml:/etc/promtail/config.yml:ro
+      # Host system logs
+      - /var/log:/var/log:ro
+      # Docker logs (if any containers run on this server)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    environment:
+      - LOKI_URL=${LOKI_URL:-http://loki:3100}
+      - SERVER_NAME=${SERVER_NAME:-remote-server}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

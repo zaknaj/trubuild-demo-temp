@@ -1,0 +1,13 @@
+.DS_Store
+.env
+crt.pem
+key.pem
+myenv/
+.pylintrc
+venv/
+__pycache__/
+*.pyc
+gcp-credentials.json
+backend_pub.pem
+frontend_prv.pem
+engine/tests

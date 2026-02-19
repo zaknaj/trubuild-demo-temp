@@ -1,0 +1,18 @@
+{
+  "files.watcherExclude": {
+    "**/routeTree.gen.ts": true
+  },
+  "search.exclude": {
+    "**/routeTree.gen.ts": true
+  },
+  "files.readonlyInclude": {
+    "**/routeTree.gen.ts": true
+  },
+  "files.exclude": {
+    ".cursor": true,
+    ".tanstack": true,
+    ".vscode": true,
+    "node_modules": true,
+    "src/routeTree.gen.ts": true
+  }
+}

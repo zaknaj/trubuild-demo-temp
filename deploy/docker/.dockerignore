@@ -1,0 +1,96 @@
+# ==============================================================================
+# Docker Build Ignore File
+# ==============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+docs/
+LICENSE
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (secrets should come from Vault)
+.env
+.env.*
+!.env.example
+
+# Node.js (app)
+app/node_modules/
+app/.output/
+app/dist/
+app/.vinxi/
+app/.cache/
+
+# Python (engine)
+engine/__pycache__/
+engine/*.pyc
+engine/*.pyo
+engine/*.pyd
+engine/.Python
+engine/venv/
+engine/env/
+engine/.venv/
+engine/*.egg-info/
+engine/.eggs/
+engine/build/
+engine/dist/
+
+# Test files
+**/*.test.*
+**/*.spec.*
+**/__tests__/
+**/test/
+**/tests/
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+engine/logs/
+
+# Local development
+*.local
+.turbo/
+
+# SSL certificates (should be mounted at runtime)
+*.pem
+*.crt
+*.key
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Deploy artifacts (don't include in image builds)
+deploy/docker/
+deploy/compose/
+deploy/k8s/
+deploy/profiles/
+
+# Infrastructure as code
+infra/
+
+# Scripts (not needed in images)
+scripts/
+
+# GitHub workflows
+.github/

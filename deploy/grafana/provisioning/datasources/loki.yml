@@ -1,0 +1,19 @@
+# ==============================================================================
+# Grafana Datasource Provisioning - Loki
+# ==============================================================================
+# Auto-configures Loki as the default datasource when Grafana starts
+# ==============================================================================
+
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: true
+    editable: false
+    jsonData:
+      maxLines: 1000
+      timeout: 60

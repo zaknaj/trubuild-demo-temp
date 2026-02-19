@@ -1,0 +1,111 @@
+{
+  "uid": "trubuild-app-logs",
+  "title": "TruBuild - App Logs (TanStack)",
+  "description": "Logs from the TanStack Start frontend application",
+  "tags": ["trubuild", "app", "tanstack"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "App Log Volume",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({service=\"app\"} [1m]))",
+          "legendFormat": "Log Lines / min",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "bars", "fillOpacity": 50 },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "App Errors",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({service=\"app\"} |~ \"(?i)(error|fatal|exception|unhandled)\" [5m]))",
+          "legendFormat": "Errors / 5min",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "custom": { "drawStyle": "bars", "fillOpacity": 80 },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "App HTTP Requests (from nginx)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 6 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({service=\"nginx\"} |~ \"(GET|POST|PUT|DELETE|PATCH)\" [1m]))",
+          "legendFormat": "HTTP Requests / min",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(count_over_time({service=\"nginx\"} |~ \"\\\" (4[0-9]{2}|5[0-9]{2}) \" [1m]))",
+          "legendFormat": "4xx/5xx Errors / min",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "fillOpacity": 20 },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "App Log Stream",
+      "type": "logs",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 12 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{service=\"app\"} |~ \"$search\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "name": "search",
+        "type": "textbox",
+        "current": { "value": ".*" },
+        "label": "Search"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "version": 1
+}

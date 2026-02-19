@@ -1,0 +1,46 @@
+# ==============================================================================
+# TruBuild Nginx - Reverse Proxy
+# Alpine-based with security hardening
+# ==============================================================================
+
+FROM nginx:1.25-alpine
+
+# Security: Labels for container identification
+LABEL org.opencontainers.image.source="https://github.com/trubuild/trubuild-monorepo"
+LABEL org.opencontainers.image.description="TruBuild Nginx - Reverse Proxy"
+LABEL org.opencontainers.image.licenses="Proprietary"
+
+# Install additional tools for health checks
+RUN apk add --no-cache curl
+
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy custom nginx configuration
+COPY deploy/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# Create directory for SSL certificates (mounted at runtime)
+RUN mkdir -p /etc/nginx/ssl && \
+    chown -R nginx:nginx /etc/nginx/ssl
+
+# Create cache directories
+RUN mkdir -p /var/cache/nginx && \
+    chown -R nginx:nginx /var/cache/nginx
+
+# Security: Remove unnecessary files and set permissions
+RUN rm -rf /usr/share/nginx/html/* && \
+    chown -R nginx:nginx /var/log/nginx
+
+# Expose ports
+EXPOSE 80 443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+# Run as nginx user (already default in nginx:alpine but explicit is better)
+USER nginx
+
+# Start nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
