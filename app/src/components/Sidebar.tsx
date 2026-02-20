@@ -8,6 +8,7 @@ import {
   Folders,
   LayoutDashboard,
   PanelLeft,
+  Settings,
 } from "lucide-react"
 import { projectsQueryOptions, orgsQueryOptions, sessionQueryOptions } from "@/lib/query-options"
 import { cn } from "@/lib/utils"
@@ -167,6 +168,12 @@ export const Sidebar = () => {
             label="Vendor database"
             icon={BookUser}
             isActive={pathname === "/vendor-db"}
+          />
+          <SidebarItem
+            to="/settings"
+            label="Settings"
+            icon={Settings}
+            isActive={pathname === "/settings"}
           />
         </nav>
       </div>

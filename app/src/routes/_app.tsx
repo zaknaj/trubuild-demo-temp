@@ -2,6 +2,7 @@ import {
   createFileRoute,
   Outlet,
   redirect,
+  useRouterState,
 } from "@tanstack/react-router"
 import { Sidebar } from "../components/Sidebar"
 import { Suspense } from "react"
@@ -38,10 +39,15 @@ export const Route = createFileRoute("/_app")({
 })
 
 function RouteComponent() {
+  const isSettingsPage = useRouterState({
+    select: (state) =>
+      state.matches.some((match) => match.routeId === "/_app/settings"),
+  })
+
   return (
     <div className="w-screen h-screen overflow-hidden text-sm flex bg-[#F9F9F9]">
       <ErrorBoundary>
-        <Sidebar />
+        {!isSettingsPage && <Sidebar />}
       </ErrorBoundary>
       <div className="flex-1">
         <ErrorBoundary>

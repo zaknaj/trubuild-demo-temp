@@ -159,37 +159,3 @@
     0 0 40px 0 rgba(0, 0, 0, 0.07);
 }
 
-/* =============================================================================
-   Nav Item Styles
-   Common light nav items for settings/dialogs
-============================================================================= */
-
-/* Base nav item - shared properties */
-.nav-item {
-  display: flex;
-  align-items: center;
-  height: 28px;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  font-size: 0.8125rem; /* 13px */
-  font-weight: 400;
-  border-radius: 0.375rem;
-}
-
-.nav-item.active {
-  font-weight: 600;
-}
-
-/* Light menu nav items (settings, etc.) */
-.nav-item-light {
-  color: var(--foreground);
-}
-
-.nav-item-light:hover:not(.active) {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.nav-item-light.active {
-  background-color: var(--primary);
-  color: white;
-}

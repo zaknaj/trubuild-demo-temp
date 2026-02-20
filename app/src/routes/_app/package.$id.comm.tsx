@@ -1,36 +1,20 @@
-import { useState, useEffect } from "react"
+import { type FormEvent, useEffect, useState } from "react"
 import {
   createFileRoute,
+  Link,
   Outlet,
+  redirect,
   useMatches,
   useNavigate,
-  redirect,
 } from "@tanstack/react-router"
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import {
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query"
-import {
-  packageDetailQueryOptions,
-  packageContractorsQueryOptions,
-  commercialEvaluationsQueryOptions,
   packageAccessQueryOptions,
+  packageContractorsQueryOptions,
+  packageDetailQueryOptions,
 } from "@/lib/query-options"
 import { createAssetFn } from "@/fn/packages"
-import {
-  createCommercialEvaluationFn,
-  updateCommercialEvaluationDataFn,
-} from "@/fn/evaluations"
-import {
-  createCommRfpCompareJobFn,
-  getCommRfpCompareJobStatusFn,
-  getCommRfpCompareResultFn,
-} from "@/fn/jobs"
 import useStore from "@/lib/store"
-import type { CommercialEvaluationData } from "@/lib/types"
-import type { CommRfpJobStatus } from "@/lib/types"
-import { extractCommReportFromArtifact } from "@/lib/comm-job"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -44,22 +28,9 @@ import {
 } from "@/components/ui/sheet"
 import { UploadZone, type UploadedFile } from "@/components/ui/upload-zone"
 import { StepTitle } from "@/components/ui/step-title"
-import { UserIcon } from "lucide-react"
+import { ArrowLeft, Plus, UserIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-
-type CommercialEvaluation = {
-  id: string
-  assetId: string
-  roundNumber: number
-  roundName: string
-  data: CommercialEvaluationData
-  createdAt: Date
-  updatedAt: Date
-}
-
-const JOB_POLL_INTERVAL_MS = 3000
-const JOB_POLL_TIMEOUT_MS = 10 * 60 * 1000
 
 export const Route = createFileRoute("/_app/package/$id/comm")({
   beforeLoad: async ({ params, context }) => {
@@ -99,23 +70,13 @@ function RouteComponent() {
     ? assets.find((a) => a.id === currentAssetId)
     : null
 
-  // Create asset sheet state (from store for cross-component access)
   const isSheetOpen = useStore((s) => s.createAssetSheetOpen)
   const setIsSheetOpen = useStore((s) => s.setCreateAssetSheetOpen)
 
-  // Asset creation form state
   const [assetName, setAssetName] = useState("")
   const [boqFile, setBoqFile] = useState<UploadedFile[]>([])
   const [pteFile, setPteFile] = useState<UploadedFile[]>([])
   const [vendorFiles, setVendorFiles] = useState<
-    Record<string, UploadedFile[]>
-  >({})
-
-  // Commercial setup sheet state
-  const [isSetupOpen, setIsSetupOpen] = useState(false)
-  const [evalBoqFile, setEvalBoqFile] = useState<UploadedFile[]>([])
-  const [evalPteFile, setEvalPteFile] = useState<UploadedFile[]>([])
-  const [evalVendorFiles, setEvalVendorFiles] = useState<
     Record<string, UploadedFile[]>
   >({})
 
@@ -156,7 +117,6 @@ function RouteComponent() {
     setVendorFiles({})
   }
 
-  // Reset form when sheet opens
   useEffect(() => {
     if (isSheetOpen) {
       resetForm()
@@ -167,7 +127,7 @@ function RouteComponent() {
     setVendorFiles((prev) => ({ ...prev, [vendorId]: files }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     const trimmedName = assetName.trim()
     if (!trimmedName) {
@@ -188,37 +148,107 @@ function RouteComponent() {
   ).length
   const canCreate = assetName.trim() && isBoqDone
 
-  // Determine which view to show based on whether we're viewing an asset
   const isInAssetView = !!currentAssetId
 
-  // For asset view, we need evaluations data
-  if (isInAssetView && currentAsset) {
+  const isPtcRoute = matches.some(
+    (match) => match.routeId === "/_app/package/$id/comm/$assetId/ptc"
+  )
+
+  if (isInAssetView && currentAssetId && currentAsset) {
     return (
-      <AssetView
-        packageId={id}
-        assetId={currentAssetId}
-        assetName={currentAsset.name}
-        contractors={contractors}
-        isSetupOpen={isSetupOpen}
-        setIsSetupOpen={setIsSetupOpen}
-        evalBoqFile={evalBoqFile}
-        setEvalBoqFile={setEvalBoqFile}
-        evalPteFile={evalPteFile}
-        setEvalPteFile={setEvalPteFile}
-        evalVendorFiles={evalVendorFiles}
-        setEvalVendorFiles={setEvalVendorFiles}
-      />
+      <div className="h-full w-full bg-[#F9F9F9]">
+        <div className="h-full w-full flex flex-col">
+          <header className="px-8 pt-6 pb-4 border-b border-black/5 shrink-0">
+            <Link
+              to="/package/$id/comm"
+              params={{ id }}
+              className="inline-flex items-center gap-1 text-[13px] font-medium opacity-60 hover:opacity-100"
+            >
+              <ArrowLeft size={14} />
+              Commercial Analysis
+            </Link>
+            <div className="mt-3 flex items-end justify-between gap-3">
+              <h1 className="text-[24px] leading-8 font-semibold text-black">
+                {currentAsset.name}
+              </h1>
+              <nav className="flex items-center gap-5">
+                <Link
+                  to="/package/$id/comm/$assetId"
+                  params={{ id, assetId: currentAssetId }}
+                  className={cn(
+                    "text-[13px] font-medium pb-1 border-b",
+                    !isPtcRoute
+                      ? "border-black text-black"
+                      : "border-transparent text-black/45 hover:text-black/70"
+                  )}
+                >
+                  Summary
+                </Link>
+                <Link
+                  to="/package/$id/comm/$assetId/ptc"
+                  params={{ id, assetId: currentAssetId }}
+                  className={cn(
+                    "text-[13px] font-medium pb-1 border-b",
+                    isPtcRoute
+                      ? "border-black text-black"
+                      : "border-transparent text-black/45 hover:text-black/70"
+                  )}
+                >
+                  PTC Insights
+                </Link>
+              </nav>
+            </div>
+          </header>
+          <div className="flex-1 min-h-0 overflow-auto">
+            <Outlet />
+          </div>
+        </div>
+      </div>
     )
   }
 
-  // Package summary view
   return (
-    <div className="flex flex-1 flex-col overflow-hidden h-full">
-      <div className="flex-1 overflow-auto">
-        <Outlet />
+    <div className="h-full w-full bg-[#F9F9F9] p-6">
+      <div className="h-full w-full flex gap-6">
+        <aside className="basis-[260px] w-[260px] min-w-[260px] max-w-[260px] shrink-0">
+          <Link
+            to="/package/$id"
+            params={{ id }}
+            className="h-8 px-2 -ml-2 inline-flex items-center gap-1 text-[13px] font-medium opacity-60 hover:opacity-100"
+          >
+            <ArrowLeft size={14} />
+            Package summary
+          </Link>
+          <h1 className="mt-2 text-[28px] leading-8 font-semibold text-[#8D4BAF]">
+            Commercial Analysis
+          </h1>
+          <nav className="mt-6 space-y-1">
+            {assets.map((asset) => (
+              <Link
+                key={asset.id}
+                to="/package/$id/comm/$assetId"
+                params={{ id, assetId: asset.id }}
+                className="w-full h-8 rounded-[6px] px-2 flex items-center text-[13px] font-medium hover:bg-[#EDEDED]"
+              >
+                <span className="truncate opacity-70">{asset.name}</span>
+              </Link>
+            ))}
+            <button
+              type="button"
+              className="w-full h-8 rounded-[6px] px-2 flex items-center gap-1 text-[13px] font-medium text-[#7EA16B] hover:bg-[#EDEDED]"
+              onClick={() => setIsSheetOpen(true)}
+            >
+              <Plus size={14} />
+              New asset
+            </button>
+          </nav>
+        </aside>
+
+        <main className="flex-1 min-w-0 overflow-auto">
+          <Outlet />
+        </main>
       </div>
 
-      {/* Create Asset Sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent className="sm:max-w-xl overflow-y-auto">
           <SheetHeader>
@@ -362,413 +392,5 @@ function RouteComponent() {
         </SheetContent>
       </Sheet>
     </div>
-  )
-}
-
-// ============================================================================
-// Asset View Component
-// ============================================================================
-
-function AssetView({
-  packageId,
-  assetId,
-  assetName,
-  contractors,
-  isSetupOpen,
-  setIsSetupOpen,
-  evalBoqFile,
-  setEvalBoqFile,
-  evalPteFile,
-  setEvalPteFile,
-  evalVendorFiles,
-  setEvalVendorFiles,
-}: {
-  packageId: string
-  assetId: string
-  assetName: string
-  contractors: Array<{ id: string; name: string }>
-  isSetupOpen: boolean
-  setIsSetupOpen: (open: boolean) => void
-  evalBoqFile: UploadedFile[]
-  setEvalBoqFile: React.Dispatch<React.SetStateAction<UploadedFile[]>>
-  evalPteFile: UploadedFile[]
-  setEvalPteFile: React.Dispatch<React.SetStateAction<UploadedFile[]>>
-  evalVendorFiles: Record<string, UploadedFile[]>
-  setEvalVendorFiles: React.Dispatch<
-    React.SetStateAction<Record<string, UploadedFile[]>>
-  >
-}) {
-  const queryClient = useQueryClient()
-  const navigate = useNavigate()
-
-  // Get evaluations for this asset
-  const { data: evaluations } = useSuspenseQuery(
-    commercialEvaluationsQueryOptions(assetId)
-  )
-  const evaluationsList = evaluations as CommercialEvaluation[]
-
-  // Get/set round from Zustand store
-  const selectedRoundId = useStore((s) => s.selectedCommRound[assetId])
-  const setCommRound = useStore((s) => s.setCommRound)
-
-  // Auto-select latest round when no round is stored or stored round is invalid
-  useEffect(() => {
-    if (evaluationsList.length > 0) {
-      const storedRoundValid =
-        selectedRoundId && evaluationsList.some((e) => e.id === selectedRoundId)
-      if (!storedRoundValid) {
-        setCommRound(assetId, evaluationsList[0].id)
-      }
-    }
-  }, [evaluationsList, selectedRoundId, assetId, setCommRound])
-
-  // Create a commercial evaluation with data
-  const createAndRunEvaluation = useMutation({
-    mutationFn: async () => {
-      const vendorFileCount = Object.values(evalVendorFiles).filter(
-        (arr) => arr.length > 0
-      ).length
-      if (evalBoqFile.length === 0) {
-        throw new Error("BOQ template is required")
-      }
-      if (vendorFileCount < 2) {
-        throw new Error("At least 2 vendors must have files")
-      }
-
-      const newEval = (await createCommercialEvaluationFn({
-        data: { assetId },
-      })) as CommercialEvaluation
-
-      const { jobId } = await createCommRfpCompareJobFn({
-        data: {
-          packageId,
-          assetId,
-          analysisType: "compare",
-        },
-      })
-
-      const startedAt = Date.now()
-      while (true) {
-        if (Date.now() - startedAt > JOB_POLL_TIMEOUT_MS) {
-          throw new Error(
-            "Commercial comparison timed out. Please try again later."
-          )
-        }
-
-        try {
-          const readyResult = await getCommRfpCompareResultFn({
-            data: { jobId },
-          })
-          const readyReport = extractCommReportFromArtifact(
-            (readyResult as { data: unknown }).data
-          )
-          await updateCommercialEvaluationDataFn({
-            data: {
-              evaluationId: newEval.id,
-              data: readyReport,
-            },
-          })
-          return { ...newEval, data: readyReport } as unknown as CommercialEvaluation
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error)
-          if (
-            !message.includes("No result artifact found") &&
-            !message.includes('No "result" or "report" artifact found')
-          ) {
-            throw error
-          }
-          // Artifact not ready yet, continue status polling.
-        }
-
-        const statusResult = (await getCommRfpCompareJobStatusFn({
-          data: { jobId },
-        })) as CommRfpJobStatus
-
-        if (statusResult.status === "completed") {
-          const result = await getCommRfpCompareResultFn({
-            data: { jobId },
-          })
-          const reportData = extractCommReportFromArtifact(
-            (result as { data: unknown }).data
-          )
-          await updateCommercialEvaluationDataFn({
-            data: {
-              evaluationId: newEval.id,
-              data: reportData,
-            },
-          })
-          return { ...newEval, data: reportData } as unknown as CommercialEvaluation
-        }
-
-        if (
-          statusResult.status === "failed" ||
-          statusResult.status === "cancelled"
-        ) {
-          throw new Error(
-            statusResult.error ?? "Commercial comparison failed in worker."
-          )
-        }
-
-        await new Promise((resolve) =>
-          setTimeout(resolve, JOB_POLL_INTERVAL_MS)
-        )
-      }
-    },
-    onSuccess: async (newEval) => {
-      toast.success("Commercial evaluation created")
-      await queryClient.invalidateQueries({
-        queryKey: commercialEvaluationsQueryOptions(assetId).queryKey,
-      })
-      setCommRound(assetId, newEval.id)
-      setIsSetupOpen(false)
-      setEvalVendorFiles({})
-      navigate({
-        to: "/package/$id/comm/$assetId",
-        params: { id: packageId, assetId },
-      })
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create commercial evaluation"
-      )
-    },
-  })
-
-  const handleVendorFilesChange = (vendorId: string, files: UploadedFile[]) => {
-    setEvalVendorFiles((prev) => ({ ...prev, [vendorId]: files }))
-  }
-
-  return (
-    <div className="flex flex-1 flex-col overflow-hidden h-full">
-      <div className="flex-1 overflow-auto">
-        <Outlet />
-      </div>
-
-      {/* Commercial Setup Sheet */}
-      <CommercialSetupSheet
-        open={isSetupOpen}
-        onOpenChange={setIsSetupOpen}
-        packageId={packageId}
-        assetName={assetName}
-        boqFile={evalBoqFile}
-        onBoqFileChange={setEvalBoqFile}
-        pteFile={evalPteFile}
-        onPteFileChange={setEvalPteFile}
-        contractors={contractors}
-        vendorFiles={evalVendorFiles}
-        onVendorFilesChange={handleVendorFilesChange}
-        onRunEvaluation={() => createAndRunEvaluation.mutate()}
-        isPending={createAndRunEvaluation.isPending}
-      />
-    </div>
-  )
-}
-
-// ============================================================================
-// Commercial Setup Sheet
-// ============================================================================
-
-function CommercialSetupSheet({
-  open,
-  onOpenChange,
-  packageId,
-  assetName,
-  boqFile,
-  onBoqFileChange,
-  pteFile,
-  onPteFileChange,
-  contractors,
-  vendorFiles,
-  onVendorFilesChange,
-  onRunEvaluation,
-  isPending,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  packageId: string
-  assetName: string
-  boqFile: UploadedFile[]
-  onBoqFileChange: (files: UploadedFile[]) => void
-  pteFile: UploadedFile[]
-  onPteFileChange: (files: UploadedFile[]) => void
-  contractors: Array<{ id: string; name: string }>
-  vendorFiles: Record<string, UploadedFile[]>
-  onVendorFilesChange: (vendorId: string, files: UploadedFile[]) => void
-  onRunEvaluation: () => void
-  isPending: boolean
-}) {
-  const [uploadingKeys, setUploadingKeys] = useState<Set<string>>(new Set())
-  const isBoqDone = boqFile.length > 0
-  const vendorsWithFiles = Object.entries(vendorFiles).filter(
-    ([, files]) => files.length > 0
-  ).length
-  const canRunEvaluation = isBoqDone && vendorsWithFiles >= 2
-  const isUploading = uploadingKeys.size > 0
-
-  const updateUploadState = (key: string, uploading: boolean) => {
-    setUploadingKeys((prev) => {
-      const next = new Set(prev)
-      if (uploading) {
-        next.add(key)
-      } else {
-        next.delete(key)
-      }
-      return next
-    })
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Run Commercial Evaluation</SheetTitle>
-          <SheetDescription>
-            Review documents and upload vendor proposals. At least 2 vendors
-            must have files to proceed.
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="flex-1 p-4 space-y-6">
-          {/* Asset Name (read-only) */}
-          <div className="space-y-2">
-            <Label>Asset Name</Label>
-            <Input value={assetName} disabled className="bg-muted" />
-          </div>
-
-          {/* BOQ File */}
-          <div className="space-y-2">
-            <StepTitle
-              title="Bill Of Quantities (BOQ)"
-              complete={isBoqDone}
-              required
-            />
-            <UploadZone
-              files={boqFile}
-              onFilesChange={onBoqFileChange}
-              packageId={packageId}
-              category="boq"
-              storagePathMode="comm_rfp_boq"
-              accept=".pdf,.xlsx,.xls"
-              onUploadingChange={(uploading) =>
-                updateUploadState("boq", uploading)
-              }
-            />
-          </div>
-
-          {/* PTE File */}
-          <div className="space-y-2">
-            <StepTitle
-              title="Pre-Tender Estimate (PTE)"
-              complete={pteFile.length > 0}
-              description="Optional"
-            />
-            <UploadZone
-              files={pteFile}
-              onFilesChange={onPteFileChange}
-              packageId={packageId}
-              category="pte"
-              storagePathMode="comm_rfp_rfp"
-              accept=".pdf,.xlsx,.xls"
-              onUploadingChange={(uploading) =>
-                updateUploadState("pte", uploading)
-              }
-            />
-          </div>
-
-          {/* Vendor Files */}
-          <div className="space-y-3">
-            <StepTitle
-              title={`Vendor Proposals (${vendorsWithFiles}/${contractors.length} vendors have files)`}
-              complete={canRunEvaluation}
-              required
-            />
-
-            {contractors.length === 0 ? (
-              <div className="text-center py-6 border rounded-lg border-dashed">
-                <UserIcon className="size-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  No contractors added to this package yet.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {contractors.map((contractor) => {
-                  const files = vendorFiles[contractor.id] ?? []
-                  const hasFiles = files.length > 0
-
-                  return (
-                    <div
-                      key={contractor.id}
-                      className={cn(
-                        "rounded-lg border p-3 transition-colors",
-                        hasFiles &&
-                          "border-emerald-500 bg-emerald-50/50"
-                      )}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex items-center justify-center w-6 h-6 rounded bg-muted">
-                          <UserIcon
-                            size={14}
-                            className="text-muted-foreground"
-                          />
-                        </div>
-                        <span className="text-sm font-medium">
-                          {contractor.name}
-                        </span>
-                      </div>
-                      <UploadZone
-                        files={files}
-                        onFilesChange={(newFiles) =>
-                          onVendorFilesChange(contractor.id, newFiles)
-                        }
-                        packageId={packageId}
-                        category="vendor_proposal"
-                        contractorId={contractor.id}
-                        storagePathMode="comm_rfp_tender"
-                        vendorName={contractor.name}
-                        multiple
-                        accept=".pdf,.xlsx,.xls,.doc,.docx"
-                        compact
-                        onUploadingChange={(uploading) =>
-                          updateUploadState(`vendor:${contractor.id}`, uploading)
-                        }
-                      />
-                    </div>
-                  )
-                })}
-
-                {!canRunEvaluation && (
-                  <p className="text-sm text-amber-600">
-                    At least 2 vendors must have files to run evaluation
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <SheetFooter className="px-4 pb-4">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={onRunEvaluation}
-            disabled={!canRunEvaluation || isPending || isUploading}
-          >
-            {isPending
-              ? "Running..."
-              : isUploading
-                ? "Uploading..."
-                : "Run Evaluation"}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
   )
 }

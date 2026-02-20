@@ -14,6 +14,7 @@ import { Route as CreateOrgRouteImport } from './routes/create-org'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppVendorDbRouteImport } from './routes/_app/vendor-db'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppAllProjectsRouteImport } from './routes/_app/all-projects'
 import { Route as ApiWorkosCallbackRouteImport } from './routes/api/workos.callback'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
@@ -53,6 +54,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppVendorDbRoute = AppVendorDbRouteImport.update({
   id: '/vendor-db',
   path: '/vendor-db',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAllProjectsRoute = AppAllProjectsRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/create-org': typeof CreateOrgRoute
   '/login': typeof LoginRoute
   '/all-projects': typeof AppAllProjectsRoute
+  '/settings': typeof AppSettingsRoute
   '/vendor-db': typeof AppVendorDbRoute
   '/': typeof AppIndexRoute
   '/package/$id': typeof AppPackageIdRouteWithChildren
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/create-org': typeof CreateOrgRoute
   '/login': typeof LoginRoute
   '/all-projects': typeof AppAllProjectsRoute
+  '/settings': typeof AppSettingsRoute
   '/vendor-db': typeof AppVendorDbRoute
   '/': typeof AppIndexRoute
   '/project/$id': typeof AppProjectIdRoute
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/create-org': typeof CreateOrgRoute
   '/login': typeof LoginRoute
   '/_app/all-projects': typeof AppAllProjectsRoute
+  '/_app/settings': typeof AppSettingsRoute
   '/_app/vendor-db': typeof AppVendorDbRoute
   '/_app/': typeof AppIndexRoute
   '/_app/package/$id': typeof AppPackageIdRouteWithChildren
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/create-org'
     | '/login'
     | '/all-projects'
+    | '/settings'
     | '/vendor-db'
     | '/'
     | '/package/$id'
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/create-org'
     | '/login'
     | '/all-projects'
+    | '/settings'
     | '/vendor-db'
     | '/'
     | '/project/$id'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/create-org'
     | '/login'
     | '/_app/all-projects'
+    | '/_app/settings'
     | '/_app/vendor-db'
     | '/_app/'
     | '/_app/package/$id'
@@ -312,6 +324,13 @@ declare module '@tanstack/react-router' {
       path: '/vendor-db'
       fullPath: '/vendor-db'
       preLoaderRoute: typeof AppVendorDbRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/all-projects': {
@@ -493,6 +512,7 @@ const AppPackageIdRouteWithChildren = AppPackageIdRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppAllProjectsRoute: typeof AppAllProjectsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppVendorDbRoute: typeof AppVendorDbRoute
   AppIndexRoute: typeof AppIndexRoute
   AppPackageIdRoute: typeof AppPackageIdRouteWithChildren
@@ -501,6 +521,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAllProjectsRoute: AppAllProjectsRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppVendorDbRoute: AppVendorDbRoute,
   AppIndexRoute: AppIndexRoute,
   AppPackageIdRoute: AppPackageIdRouteWithChildren,
