@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect, useMemo, useState } from "react"
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
+import { useEffect, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft, Building2, FolderOpen, Settings, Users } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -48,6 +48,7 @@ import {
   restorePackageFn,
   updatePackageCurrencyFn,
 } from "@/fn/packages"
+import { authClient } from "@/auth/auth-client"
 
 type SettingsKey =
   | "general"
@@ -87,6 +88,9 @@ function SectionLoading() {
 }
 
 export const Route = createFileRoute("/_app/settings")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    section: typeof search.section === "string" ? search.section : undefined,
+  }),
   loader: async ({ context }) => {
     const queryClient = context.queryClient
 
@@ -104,13 +108,32 @@ export const Route = createFileRoute("/_app/settings")({
 function RouteComponent() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const search = Route.useSearch()
 
-  const { data: session } = useSuspenseQuery(sessionQueryOptions)
-  const { data: orgs } = useSuspenseQuery(orgsQueryOptions)
-  const { data: projects } = useSuspenseQuery(projectsQueryOptions)
-  const { data: orgRoleData } = useSuspenseQuery(currentUserOrgRoleQueryOptions)
+  const { data: session } = useQuery(sessionQueryOptions)
+  const { data: orgs } = useQuery(orgsQueryOptions)
+  const { data: projects } = useQuery(projectsQueryOptions)
+  const { data: orgRoleData } = useQuery(currentUserOrgRoleQueryOptions)
+  if (!session || !orgs || !projects || !orgRoleData) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner className="size-6 stroke-1" />
+      </div>
+    )
+  }
   const navProjects = (projects ?? []) as ProjectNavItem[]
   const [activeKey, setActiveKey] = useState<SettingsKey>("general")
+
+  const setActiveSettingsKey = (key: SettingsKey) => {
+    setActiveKey(key)
+    navigate({
+      to: "/settings",
+      search: {
+        section: key,
+      },
+      replace: true,
+    })
+  }
 
   const selectedProjectId =
     activeKey.startsWith("project:") ? activeKey.replace("project:", "") : null
@@ -139,36 +162,31 @@ function RouteComponent() {
   const archivedProjects = archivedProjectsQ.data ?? []
   const archivedPackages = archivedPackagesQ.data ?? []
 
-  const prefetchMembers = () => {
-    queryClient.prefetchQuery(orgMembersQueryOptions)
-    queryClient.prefetchQuery(orgPendingInvitesQueryOptions)
-  }
-
-  const prefetchProject = (projectId: string) => {
-    queryClient.prefetchQuery(projectDetailQueryOptions(projectId))
-    queryClient.prefetchQuery(projectAccessQueryOptions(projectId))
-    queryClient.prefetchQuery(projectMembersQueryOptions(projectId))
-    queryClient.prefetchQuery(archivedProjectsQueryOptions)
-  }
-
-  const prefetchPackage = (packageId: string) => {
-    queryClient.prefetchQuery(packageDetailQueryOptions(packageId))
-    queryClient.prefetchQuery(packageAccessQueryOptions(packageId))
-    queryClient.prefetchQuery(packageMembersQueryOptions(packageId))
-    queryClient.prefetchQuery(archivedPackagesQueryOptions)
-  }
-
   const activeOrg = orgs.find(
     (org) => org.id === session?.session?.activeOrganizationId
   )
   const canManageOrganization = orgRoleData.role === "owner"
 
   useEffect(() => {
+    const section = search.section
+    if (!section) return
+    if (
+      section === "general" ||
+      section === "organization" ||
+      section === "members" ||
+      section.startsWith("project:") ||
+      section.startsWith("package:")
+    ) {
+      setActiveKey(section as SettingsKey)
+    }
+  }, [search.section])
+
+  useEffect(() => {
     if (
       selectedProjectId &&
       !navProjects.some((project) => project.id === selectedProjectId)
     ) {
-      setActiveKey("general")
+      setActiveSettingsKey("general")
     }
   }, [selectedProjectId, navProjects])
 
@@ -179,7 +197,7 @@ function RouteComponent() {
         project.packages.some((pkg) => pkg.id === selectedPackageId)
       )
     ) {
-      setActiveKey("general")
+      setActiveSettingsKey("general")
     }
   }, [selectedPackageId, navProjects])
 
@@ -205,6 +223,22 @@ function RouteComponent() {
       toast.error(
         error instanceof Error ? error.message : "Failed to update profile"
       )
+    },
+  })
+
+  const logout = useMutation({
+    mutationFn: async () => {
+      const result = await authClient.signOut()
+      if (result.error) {
+        throw new Error(result.error.message ?? "Failed to log out")
+      }
+    },
+    onSuccess: () => {
+      queryClient.clear()
+      navigate({ to: "/login" })
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to log out")
     },
   })
 
@@ -364,7 +398,7 @@ function RouteComponent() {
         queryKey: archivedProjectsQueryOptions.queryKey,
       })
       toast.success("Project archived")
-      setActiveKey("general")
+      setActiveSettingsKey("general")
     },
     onError: (error) => {
       toast.error(
@@ -443,16 +477,17 @@ function RouteComponent() {
   const selectedPackageMembers = selectedPackageMembersQ.data ?? []
   const canManageSelectedPackage = selectedPackageAccessQ.data?.access === "full"
 
-  const selectedPackageNav = useMemo(() => {
-    if (!selectedPackageId) return null
+  let selectedPackageNav: { pkg: { id: string; name: string }; project: ProjectNavItem } | null =
+    null
+  if (selectedPackageId) {
     for (const project of navProjects) {
       const pkg = project.packages.find((item) => item.id === selectedPackageId)
       if (pkg) {
-        return { pkg, project }
+        selectedPackageNav = { pkg, project }
+        break
       }
     }
-    return null
-  }, [selectedPackageId, navProjects])
+  }
 
   const [packageName, setPackageName] = useState("")
   const [packageCurrency, setPackageCurrency] = useState("USD")
@@ -511,7 +546,7 @@ function RouteComponent() {
         queryKey: archivedPackagesQueryOptions.queryKey,
       })
       toast.success("Package archived")
-      setActiveKey("general")
+      setActiveSettingsKey("general")
     },
     onError: (error) => {
       toast.error(
@@ -579,7 +614,7 @@ function RouteComponent() {
       <div className="w-full max-w-[960px] h-screen flex gap-6">
         <aside className="basis-[260px] w-[260px] min-w-[260px] max-w-[260px] h-screen shrink-0 overflow-y-auto py-6">
           <button
-            className="h-8 px-2 -ml-2 inline-flex items-center gap-1 text-[13px] font-medium opacity-60 hover:opacity-100"
+            className="top-back-link h-8 px-2 -ml-2 inline-flex items-center gap-1 hover:opacity-100"
             onClick={() => {
               if (window.history.length > 1) {
                 window.history.back()
@@ -598,7 +633,7 @@ function RouteComponent() {
           <nav className="mt-4 space-y-1">
             <button
               className={navItemClass(activeKey === "general")}
-              onClick={() => setActiveKey("general")}
+              onClick={() => setActiveSettingsKey("general")}
               type="button"
             >
               <Settings size={16} className="opacity-70" />
@@ -606,7 +641,7 @@ function RouteComponent() {
             </button>
             <button
               className={navItemClass(activeKey === "organization")}
-              onClick={() => setActiveKey("organization")}
+              onClick={() => setActiveSettingsKey("organization")}
               type="button"
             >
               <Building2 size={16} className="opacity-70" />
@@ -614,8 +649,7 @@ function RouteComponent() {
             </button>
             <button
               className={navItemClass(activeKey === "members")}
-              onClick={() => setActiveKey("members")}
-              onMouseEnter={prefetchMembers}
+              onClick={() => setActiveSettingsKey("members")}
               type="button"
             >
               <Users size={16} className="opacity-70" />
@@ -632,8 +666,7 @@ function RouteComponent() {
                 <div key={project.id}>
                   <button
                     className={navItemClass(activeKey === `project:${project.id}`)}
-                    onClick={() => setActiveKey(`project:${project.id}`)}
-                    onMouseEnter={() => prefetchProject(project.id)}
+                    onClick={() => setActiveSettingsKey(`project:${project.id}`)}
                     type="button"
                   >
                     <FolderOpen size={16} className="opacity-70" />
@@ -643,8 +676,7 @@ function RouteComponent() {
                     <button
                       key={pkg.id}
                       className={cn(navItemClass(activeKey === `package:${pkg.id}`), "pl-8")}
-                      onClick={() => setActiveKey(`package:${pkg.id}`)}
-                      onMouseEnter={() => prefetchPackage(pkg.id)}
+                      onClick={() => setActiveSettingsKey(`package:${pkg.id}`)}
                       type="button"
                     >
                       <span className="truncate opacity-70">{pkg.name}</span>
@@ -692,6 +724,26 @@ function RouteComponent() {
                       disabled={updateProfile.isPending || !profileName.trim()}
                     >
                       {updateProfile.isPending ? "Saving..." : "Save changes"}
+                    </Button>
+                  </div>
+                </div>
+
+                <h3 className={settingsSectionTitleClass}>ACCOUNT</h3>
+                <div className={settingsCardClass}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-black">Session</p>
+                      <p className="text-xs text-black/55">
+                        Log out from this device and return to sign in.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logout.mutate()}
+                      disabled={logout.isPending}
+                    >
+                      {logout.isPending ? "Logging out..." : "Log out"}
                     </Button>
                   </div>
                 </div>

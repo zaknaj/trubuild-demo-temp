@@ -1,25 +1,20 @@
-import { useState, useEffect } from "react"
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useEffect } from "react"
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query"
 import {
   technicalEvaluationsQueryOptions,
-  packageContractorsQueryOptions,
   packageAccessQueryOptions,
 } from "@/lib/query-options"
 import useStore from "@/lib/store"
-import { BarChart3 } from "lucide-react"
+import { ArrowLeft, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { TechSetupWizard } from "@/components/TechSetupWizard"
-
-type TechnicalEvaluation = {
-  id: string
-  packageId: string
-  roundNumber: number
-  roundName: string
-  data: unknown
-  createdAt: Date
-  updatedAt: Date
-}
+import { Spinner } from "@/components/ui/spinner"
 
 export const Route = createFileRoute("/_app/package/$id/tech")({
   beforeLoad: async ({ params, context }) => {
@@ -31,33 +26,25 @@ export const Route = createFileRoute("/_app/package/$id/tech")({
       throw redirect({ to: "/package/$id", params: { id: params.id } })
     }
   },
-  loader: ({ params, context }) => {
-    context.queryClient.prefetchQuery(
-      technicalEvaluationsQueryOptions(params.id)
-    )
-    context.queryClient.prefetchQuery(packageContractorsQueryOptions(params.id))
-  },
   component: RouteComponent,
 })
 
 function RouteComponent() {
   const { id } = Route.useParams()
+  const navigate = useNavigate()
 
-  const { data: evaluations } = useSuspenseQuery(
-    technicalEvaluationsQueryOptions(id)
-  ) as {
-    data: TechnicalEvaluation[]
+  const { data: evaluations } = useQuery(technicalEvaluationsQueryOptions(id))
+
+  if (!evaluations) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner className="size-6 stroke-1" />
+      </div>
+    )
   }
-  const { data: contractors } = useSuspenseQuery(
-    packageContractorsQueryOptions(id)
-  )
-
   // Get/set round from Zustand store
   const selectedRoundId = useStore((s) => s.selectedTechRound[id])
   const setTechRound = useStore((s) => s.setTechRound)
-
-  // State for setup wizard
-  const [isSetupWizardOpen, setIsSetupWizardOpen] = useState(false)
 
   // Auto-select latest round when no round is stored or stored round is invalid
   useEffect(() => {
@@ -75,7 +62,17 @@ function RouteComponent() {
   // Empty state - no evaluations yet
   if (!hasEvaluations) {
     return (
-      <>
+      <div className="flex flex-1 flex-col">
+        <div className="px-6 pt-6">
+          <Link
+            to="/package/$id"
+            params={{ id }}
+            className="top-back-link inline-flex items-center gap-1 hover:opacity-100"
+          >
+            <ArrowLeft size={14} />
+            Package summary
+          </Link>
+        </div>
         <div className="flex flex-col items-center justify-center h-full p-12 text-center">
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
             <BarChart3 className="size-8 text-muted-foreground" />
@@ -87,33 +84,36 @@ function RouteComponent() {
             Start a technical evaluation to analyze and compare contractor
             proposals.
           </p>
-          <Button onClick={() => setIsSetupWizardOpen(true)}>
+          <Button
+            onClick={() =>
+              navigate({
+                to: "/new-tech-evaluation/$packageId",
+                params: { packageId: id },
+              })
+            }
+          >
             Start Technical Evaluation
           </Button>
         </div>
-
-        <TechSetupWizard
-          open={isSetupWizardOpen}
-          onOpenChange={setIsSetupWizardOpen}
-          packageId={id}
-          contractors={contractors}
-        />
-      </>
+      </div>
     )
   }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden h-full">
+      <div className="px-6 pt-6 shrink-0">
+        <Link
+          to="/package/$id"
+          params={{ id }}
+          className="top-back-link inline-flex items-center gap-1 hover:opacity-100"
+        >
+          <ArrowLeft size={14} />
+          Package summary
+        </Link>
+      </div>
       <div className="flex-1 overflow-auto">
         <Outlet />
       </div>
-
-      <TechSetupWizard
-        open={isSetupWizardOpen}
-        onOpenChange={setIsSetupWizardOpen}
-        packageId={id}
-        contractors={contractors}
-      />
     </div>
   )
 }

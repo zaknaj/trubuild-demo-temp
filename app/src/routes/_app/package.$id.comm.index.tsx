@@ -1,30 +1,34 @@
 import { useMemo } from "react"
 import { createFileRoute } from "@tanstack/react-router"
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import {
   packageDetailQueryOptions,
   packageCommercialSummaryQueryOptions,
 } from "@/lib/query-options"
 import { BarChart3, FileText } from "lucide-react"
 import { cn, formatCurrency } from "@/lib/utils"
+import { Spinner } from "@/components/ui/spinner"
 
 export const Route = createFileRoute("/_app/package/$id/comm/")({
-  loader: ({ params, context }) => {
-    context.queryClient.prefetchQuery(
-      packageCommercialSummaryQueryOptions(params.id)
-    )
-  },
   component: RouteComponent,
 })
 
 function RouteComponent() {
   const { id } = Route.useParams()
-  const { data: packageData } = useSuspenseQuery(packageDetailQueryOptions(id))
-  const { data: summaryData } = useSuspenseQuery(
+  const { data: packageData } = useQuery(packageDetailQueryOptions(id))
+  const { data: summaryData } = useQuery(
     packageCommercialSummaryQueryOptions(id)
   )
 
-  const assets = packageData?.assets ?? []
+  if (!packageData || !summaryData) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner className="size-6 stroke-1" />
+      </div>
+    )
+  }
+
+  const assets = packageData.assets
 
   const getLegacyContractors = (
     evaluation: unknown

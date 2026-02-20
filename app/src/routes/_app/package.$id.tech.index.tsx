@@ -1,7 +1,6 @@
 import { useState, useEffect, Fragment, useRef } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import {
-  useSuspenseQuery,
   useQuery,
   useMutation,
   useQueryClient,
@@ -66,9 +65,6 @@ import type {
 } from "@/lib/tech_rfp"
 
 export const Route = createFileRoute("/_app/package/$id/tech/")({
-  loader: ({ params, context }) => {
-    context.queryClient.prefetchQuery(packageContractorsQueryOptions(params.id))
-  },
   component: RouteComponent,
 })
 
@@ -286,12 +282,18 @@ function RouteComponent() {
   const evaluationId = useStore((s) => s.selectedTechRound[packageId])
   const setTechRound = useStore((s) => s.setTechRound)
 
-  const { data: contractors } = useSuspenseQuery(
-    packageContractorsQueryOptions(packageId)
-  )
+  const { data: contractors } = useQuery(packageContractorsQueryOptions(packageId))
   const { data: technicalEvaluations } = useQuery(
     technicalEvaluationsQueryOptions(packageId)
   ) as { data: Array<{ id: string }> | undefined }
+
+  if (!contractors) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner className="size-6 stroke-1" />
+      </div>
+    )
+  }
 
   useEffect(() => {
     if (!evaluationId && technicalEvaluations && technicalEvaluations.length > 0) {

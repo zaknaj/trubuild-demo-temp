@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import {
-  useSuspenseQuery,
+  useQuery,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query"
@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { FileQuestion } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 import type {
   CommercialEvaluationData,
   ContractorPTCs,
@@ -59,9 +60,17 @@ function RouteComponent() {
   const { assetId } = Route.useParams()
   const queryClient = useQueryClient()
 
-  const { data: evaluations } = useSuspenseQuery(
+  const { data: evaluations } = useQuery(
     commercialEvaluationsQueryOptions(assetId)
   )
+
+  if (!evaluations) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner className="size-6 stroke-1" />
+      </div>
+    )
+  }
 
   const evaluationsList = evaluations as CommercialEvaluation[]
 

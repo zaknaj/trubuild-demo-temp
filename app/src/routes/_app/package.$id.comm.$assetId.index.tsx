@@ -1,7 +1,6 @@
 import { useState, useMemo, Fragment, useEffect, useRef } from "react"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
-  useSuspenseQuery,
   useQuery,
   useMutation,
   useQueryClient,
@@ -44,6 +43,7 @@ import {
   getCommJobStatusText,
 } from "@/lib/comm-job"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -210,16 +210,25 @@ export const Route = createFileRoute("/_app/package/$id/comm/$assetId/")({
 
 function RouteComponent() {
   const { id, assetId } = Route.useParams()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const { data: assetData } = useSuspenseQuery(assetDetailQueryOptions(assetId))
-  const { data: packageData } = useSuspenseQuery(packageDetailQueryOptions(id))
-  const { data: evaluations } = useSuspenseQuery(
+  const { data: assetData } = useQuery(assetDetailQueryOptions(assetId))
+  const { data: packageData } = useQuery(packageDetailQueryOptions(id))
+  const { data: evaluations } = useQuery(
     commercialEvaluationsQueryOptions(assetId)
   )
-  const { data: contractors } = useSuspenseQuery(
+  const { data: contractors } = useQuery(
     packageContractorsQueryOptions(id)
   )
+
+  if (!assetData || !packageData || !evaluations || !contractors) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner className="size-6 stroke-1" />
+      </div>
+    )
+  }
 
   const [isSetupOpen, setIsSetupOpen] = useState(false)
   const [templateFiles, setTemplateFiles] = useState<UploadedFile[]>([])
@@ -428,7 +437,10 @@ function RouteComponent() {
   }
 
   const handleOpenSetup = () => {
-    setIsSetupOpen(true)
+    navigate({
+      to: "/new-commercial-evaluation/$assetId",
+      params: { assetId },
+    })
   }
 
   const recoverMissingData = useMutation({

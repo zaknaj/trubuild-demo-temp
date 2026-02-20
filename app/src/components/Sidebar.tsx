@@ -10,7 +10,12 @@ import {
   PanelLeft,
   Settings,
 } from "lucide-react"
-import { projectsQueryOptions, orgsQueryOptions, sessionQueryOptions } from "@/lib/query-options"
+import {
+  currentUserOrgRoleQueryOptions,
+  projectsQueryOptions,
+  orgsQueryOptions,
+  sessionQueryOptions,
+} from "@/lib/query-options"
 import { cn } from "@/lib/utils"
 import {
   Tooltip,
@@ -91,9 +96,11 @@ export const Sidebar = () => {
   const { data: projects = [] } = useQuery(projectsQueryOptions)
   const { data: orgs = [] } = useSuspenseQuery(orgsQueryOptions)
   const { data: session } = useSuspenseQuery(sessionQueryOptions)
+  const { data: orgRoleData } = useSuspenseQuery(currentUserOrgRoleQueryOptions)
 
   const activeOrgId = session?.session?.activeOrganizationId
   const activeOrg = orgs.find((org) => org.id === activeOrgId)
+  const canOpenOrgSettings = orgRoleData.role === "owner"
 
   const pathname = location.pathname
   const activeProjectId = pathname.match(/^\/project\/([^/]+)/)?.[1] ?? null
@@ -130,12 +137,25 @@ export const Sidebar = () => {
     >
       <div className="px-2 pt-2">
         <div className="h-8 px-2 flex items-center justify-between">
-          <div className="flex items-center min-w-0">
-            <span className="h-6 w-6 rounded-full bg-[#E0E0E0] shrink-0" />
-            <span className="ml-[6px] text-[14px] font-medium truncate opacity-100">
-              {activeOrg?.name ?? "Company"}
-            </span>
-          </div>
+          {canOpenOrgSettings ? (
+            <Link
+              to="/settings"
+              search={{ section: "organization" }}
+              className="flex items-center min-w-0 rounded-[6px] pr-2 hover:bg-[#EDEDED]"
+            >
+              <span className="h-6 w-6 rounded-full bg-[#E0E0E0] shrink-0" />
+              <span className="ml-[6px] text-[14px] font-medium truncate opacity-100">
+                {activeOrg?.name ?? "Company"}
+              </span>
+            </Link>
+          ) : (
+            <div className="flex items-center min-w-0">
+              <span className="h-6 w-6 rounded-full bg-[#E0E0E0] shrink-0" />
+              <span className="ml-[6px] text-[14px] font-medium truncate opacity-100">
+                {activeOrg?.name ?? "Company"}
+              </span>
+            </div>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -228,12 +248,16 @@ export const Sidebar = () => {
       </div>
 
       <div className="px-2 pb-2">
-        <div className="h-8 px-2 flex items-center">
+        <Link
+          to="/settings"
+          search={{ section: "general" }}
+          className="h-8 px-2 rounded-[6px] flex items-center hover:bg-[#EDEDED]"
+        >
           <span className="h-6 w-6 rounded-full bg-[#E0E0E0] shrink-0" />
           <span className="ml-[6px] text-[14px] font-medium truncate opacity-100">
             {session?.user?.name ?? "User"}
           </span>
-        </div>
+        </Link>
       </div>
     </aside>
   )

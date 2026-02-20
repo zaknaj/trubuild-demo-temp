@@ -39,15 +39,26 @@ export const Route = createFileRoute("/_app")({
 })
 
 function RouteComponent() {
-  const isSettingsPage = useRouterState({
+  const isFocusPage = useRouterState({
     select: (state) =>
-      state.matches.some((match) => match.routeId === "/_app/settings"),
+      state.matches.some((match) => {
+        const focusRoutePrefixes = [
+          "/_app/settings",
+          "/_app/new-project",
+          "/_app/new-package",
+          "/_app/new-asset",
+          "/_app/new-tech-evaluation",
+          "/_app/new-commercial-evaluation",
+          "/_app/award-package",
+        ]
+        return focusRoutePrefixes.some((prefix) => match.routeId.startsWith(prefix))
+      }),
   })
 
   return (
     <div className="w-screen h-screen overflow-hidden text-sm flex bg-[#F9F9F9]">
       <ErrorBoundary>
-        {!isSettingsPage && <Sidebar />}
+        {!isFocusPage && <Sidebar />}
       </ErrorBoundary>
       <div className="flex-1">
         <ErrorBoundary>

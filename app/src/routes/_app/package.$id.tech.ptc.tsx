@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import {
-  useSuspenseQuery,
+  useQuery,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query"
@@ -40,6 +40,7 @@ import {
   normalizeTechnicalEvaluationPtcs,
 } from "@/lib/technical-ptc"
 import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
 
 export const Route = createFileRoute("/_app/package/$id/tech/ptc")({
   component: RouteComponent,
@@ -71,9 +72,17 @@ function RouteComponent() {
 function PTCContent({ evaluationId }: { evaluationId: string }) {
   const queryClient = useQueryClient()
 
-  const { data: evaluation } = useSuspenseQuery(
+  const { data: evaluation } = useQuery(
     technicalEvaluationDetailQueryOptions(evaluationId)
   ) as { data: { data?: unknown } }
+
+  if (!evaluation) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner className="size-6 stroke-1" />
+      </div>
+    )
+  }
 
   const evalData = (evaluation.data ?? {}) as Partial<TechnicalEvaluationData>
   const persistedTechnicalPtcs = useMemo(

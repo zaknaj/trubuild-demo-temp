@@ -98,7 +98,7 @@ export interface TechnicalEvaluationData {
 }
 
 // Generate fresh default criteria with new UUIDs
-function generateDefaultCriteria(): Scope[] {
+export function generateDefaultCriteria(): Scope[] {
   return [
     {
       id: crypto.randomUUID(),
@@ -176,7 +176,7 @@ function toSafeWeight(value: unknown): number {
   return 0
 }
 
-function normalizeExtractedCriteria(raw: unknown): Scope[] {
+export function normalizeExtractedCriteria(raw: unknown): Scope[] {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return []
   }
@@ -229,7 +229,7 @@ function normalizeExtractedCriteria(raw: unknown): Scope[] {
   return scopes
 }
 
-function normalizeEditableCriteria(criteria: Scope[]): Scope[] {
+export function normalizeEditableCriteria(criteria: Scope[]): Scope[] {
   return criteria
     .map((scope) => ({
       ...scope,
@@ -244,7 +244,7 @@ function normalizeEditableCriteria(criteria: Scope[]): Scope[] {
     .filter((scope) => scope.breakdowns.length > 0)
 }
 
-function toTechRfpEvaluationCriteria(
+export function toTechRfpEvaluationCriteria(
   scopes: Scope[]
 ): TechRfpEvaluationCriteriaType {
   const criteria: TechRfpEvaluationCriteriaType = {}
@@ -927,7 +927,7 @@ function WeightTotal({ value }: { value: number }) {
   )
 }
 
-function Step2Criteria({
+export function Step2Criteria({
   criteria,
   onChange,
   totalWeight,

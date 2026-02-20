@@ -1,19 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
   useQuery,
 } from "@tanstack/react-query"
-import { useState, useMemo } from "react"
-import { toast } from "sonner"
+import { useMemo } from "react"
 import {
   ClipboardList,
   FileText,
   ArrowRight,
   Award,
   Trophy,
-  CheckCircle2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,21 +18,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   technicalEvaluationsQueryOptions,
   hasCommercialEvaluationQueryOptions,
   packageDetailQueryOptions,
@@ -45,28 +25,31 @@ import {
   packageCommercialSummaryQueryOptions,
   technicalEvaluationDetailQueryOptions,
   packageAccessQueryOptions,
-  projectDetailQueryOptions,
 } from "@/lib/query-options"
-import { awardPackageFn } from "@/fn/packages"
 import type { TechnicalEvaluationData } from "@/components/TechSetupWizard"
 import type { CommercialEvaluationData } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
+import { Spinner } from "@/components/ui/spinner"
+
+type TechnicalEvaluationSummary = {
+  id: string
+  data: unknown
+  roundName: string
+}
+
+type TechnicalEvaluationDetail = {
+  data: unknown
+}
+
+type PackageCommercialSummary = {
+  assets: Array<{
+    id: string
+    name: string
+    evaluation: CommercialEvaluationData | null
+  }>
+}
 
 export const Route = createFileRoute("/_app/package/$id/")({
-  loader: ({ params, context }) => {
-    context.queryClient.prefetchQuery(
-      technicalEvaluationsQueryOptions(params.id)
-    )
-    context.queryClient.prefetchQuery(
-      hasCommercialEvaluationQueryOptions(params.id)
-    )
-    context.queryClient.prefetchQuery(packageDetailQueryOptions(params.id))
-    context.queryClient.prefetchQuery(packageContractorsQueryOptions(params.id))
-    context.queryClient.prefetchQuery(
-      packageCommercialSummaryQueryOptions(params.id)
-    )
-    context.queryClient.prefetchQuery(packageAccessQueryOptions(params.id))
-  },
   component: RouteComponent,
 })
 
@@ -143,16 +126,20 @@ function getCommercialRankings(
 function RouteComponent() {
   const { id } = Route.useParams()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const [awardSheetOpen, setAwardSheetOpen] = useState(false)
-  const [selectedContractorId, setSelectedContractorId] = useState<string>("")
-  const [awardComments, setAwardComments] = useState<string>("")
 
-  const { data: packageData } = useSuspenseQuery(packageDetailQueryOptions(id))
-  const { data: contractors } = useSuspenseQuery(
+  const { data: packageData } = useQuery(packageDetailQueryOptions(id))
+  const { data: contractors } = useQuery(
     packageContractorsQueryOptions(id)
   )
-  const { data: accessData } = useSuspenseQuery(packageAccessQueryOptions(id))
+  const { data: accessData } = useQuery(packageAccessQueryOptions(id))
+
+  if (!packageData || !contractors || !accessData) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner className="size-6 stroke-1" />
+      </div>
+    )
+  }
 
   const canViewTechnical =
     accessData.access === "full" || accessData.access === "technical"
@@ -163,17 +150,17 @@ function RouteComponent() {
   const { data: technicalEvals } = useQuery({
     ...technicalEvaluationsQueryOptions(id),
     enabled: canViewTechnical,
-  })
+  }) as { data: TechnicalEvaluationSummary[] | undefined }
 
   // Only fetch commercial data if user has commercial access
   const { data: commercialEvalData } = useQuery({
     ...hasCommercialEvaluationQueryOptions(id),
     enabled: canViewCommercial,
-  })
+  }) as { data: { hasEvaluation: boolean } | undefined }
   const { data: commercialSummary } = useQuery({
     ...packageCommercialSummaryQueryOptions(id),
     enabled: canViewCommercial,
-  })
+  }) as { data: PackageCommercialSummary | undefined }
 
   // Get the latest technical evaluation details (if any and can view)
   const latestTechEval =
@@ -183,35 +170,7 @@ function RouteComponent() {
   const { data: techEvalDetail } = useQuery({
     ...technicalEvaluationDetailQueryOptions(latestTechEval?.id ?? ""),
     enabled: !!latestTechEval && canViewTechnical,
-  })
-
-  const awardPackage = useMutation({
-    mutationFn: (data: { contractorId: string; comments?: string }) =>
-      awardPackageFn({
-        data: {
-          packageId: id,
-          contractorId: data.contractorId,
-          comments: data.comments,
-        },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: packageDetailQueryOptions(id).queryKey,
-      })
-      queryClient.invalidateQueries({
-        queryKey: projectDetailQueryOptions(packageData.project.id).queryKey,
-      })
-      setAwardSheetOpen(false)
-      setSelectedContractorId("")
-      setAwardComments("")
-      toast.success("Package awarded successfully")
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to award package"
-      )
-    },
-  })
+  }) as { data: TechnicalEvaluationDetail | undefined }
 
   const hasTechEval =
     canViewTechnical && technicalEvals && technicalEvals.length > 0
@@ -252,27 +211,16 @@ function RouteComponent() {
   }, [contractors, technicalRankings, commercialRankings])
 
   // Determine if award button should be disabled and why
-  const canAward = eligibleContractors.length > 0 && isTechReviewComplete
-  const awardDisabledReason = !isTechReviewComplete
+  const hasAwardPermission = accessData.access === "full"
+  const canAward =
+    hasAwardPermission && eligibleContractors.length > 0 && isTechReviewComplete
+  const awardDisabledReason = !hasAwardPermission
+    ? "You need full package access to award this package"
+    : !isTechReviewComplete
     ? "Complete the score review on the latest technical evaluation first"
     : eligibleContractors.length === 0
       ? "No contractors have completed both technical and commercial evaluations"
       : null
-
-  // For award sheet: get selected contractor's info
-  const selectedContractor = contractors.find(
-    (c) => c.id === selectedContractorId
-  )
-  const selectedTechRank =
-    technicalRankings.findIndex((r) => r.id === selectedContractorId) + 1
-  const selectedTechScore = technicalRankings.find(
-    (r) => r.id === selectedContractorId
-  )?.score
-  const selectedCommRank =
-    commercialRankings.findIndex((r) => r.id === selectedContractorId) + 1
-  const selectedCommTotal = commercialRankings.find(
-    (r) => r.id === selectedContractorId
-  )?.total
 
   return (
     <>
@@ -286,19 +234,12 @@ function RouteComponent() {
                   <span>
                     <Button
                       size="sm"
-                      onClick={() => {
-                        if (technicalRankings.length > 0) {
-                          const highestScorer = technicalRankings[0]
-                          if (
-                            eligibleContractors.some(
-                              (c) => c.id === highestScorer.id
-                            )
-                          ) {
-                            setSelectedContractorId(highestScorer.id)
-                          }
-                        }
-                        setAwardSheetOpen(true)
-                      }}
+                      onClick={() =>
+                        navigate({
+                          to: "/award-package/$packageId",
+                          params: { packageId: id },
+                        })
+                      }
                       disabled={!canAward}
                     >
                       <Award className="mr-1.5 h-3.5 w-3.5" />
@@ -352,7 +293,12 @@ function RouteComponent() {
                 variant={hasTechEval ? "outline" : "default"}
                 className="mt-auto"
                 onClick={() =>
-                  navigate({ to: "/package/$id/tech", params: { id } })
+                  hasTechEval
+                    ? navigate({ to: "/package/$id/tech", params: { id } })
+                    : navigate({
+                        to: "/new-tech-evaluation/$packageId",
+                        params: { packageId: id },
+                      })
                 }
               >
                 {hasTechEval
@@ -457,7 +403,7 @@ function RouteComponent() {
                       <span className="font-medium">
                         {formatCurrency(
                           contractor.total,
-                          packageData.package.currency
+                          packageData.package.currency ?? undefined
                         )}
                       </span>
                     </div>
@@ -469,141 +415,6 @@ function RouteComponent() {
         )}
       </div>
 
-      {/* Award Package Sheet */}
-      <Sheet open={awardSheetOpen} onOpenChange={setAwardSheetOpen}>
-        <SheetContent className="flex flex-col">
-          <SheetHeader className="px-6">
-            <SheetTitle>Award Package</SheetTitle>
-            <SheetDescription>
-              Select a contractor to award this package to.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="flex-1 py-6 px-6 space-y-6 overflow-auto">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select Contractor</label>
-              <Select
-                value={selectedContractorId}
-                onValueChange={setSelectedContractorId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a contractor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {eligibleContractors.map((contractor) => (
-                    <SelectItem key={contractor.id} value={contractor.id}>
-                      {contractor.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Only contractors with both technical and commercial evaluations
-                are shown.
-              </p>
-            </div>
-
-            {selectedContractor && (
-              <div className="space-y-4">
-                <h4 className="font-medium text-sm">Evaluation Summary</h4>
-
-                {/* Technical Summary */}
-                {selectedTechRank > 0 && (
-                  <div className="p-4 border rounded-lg space-y-2">
-                    <div className="flex items-center gap-2">
-                      <ClipboardList className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium text-sm">
-                        Technical Evaluation
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Rank</span>
-                      <span className="font-medium">
-                        #{selectedTechRank} of {technicalRankings.length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Score</span>
-                      <span className="font-medium">
-                        {selectedTechScore?.toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Commercial Summary */}
-                {selectedCommRank > 0 && (
-                  <div className="p-4 border rounded-lg space-y-2">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-green-600" />
-                      <span className="font-medium text-sm">
-                        Commercial Evaluation
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Rank</span>
-                      <span className="font-medium">
-                        #{selectedCommRank} of {commercialRankings.length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Total Bid</span>
-                      <span className="font-medium">
-                        {formatCurrency(
-                          selectedCommTotal ?? 0,
-                          packageData.package.currency
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {selectedTechRank === 0 && selectedCommRank === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No evaluation data available for this contractor.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Award Comments */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Comments</label>
-              <textarea
-                className="w-full min-h-[100px] px-3 py-2 text-sm border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Add any comments or justification for this award decision..."
-                value={awardComments}
-                onChange={(e) => setAwardComments(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <SheetFooter className="px-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setAwardSheetOpen(false)
-                setSelectedContractorId("")
-                setAwardComments("")
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() =>
-                awardPackage.mutate({
-                  contractorId: selectedContractorId,
-                  comments: awardComments,
-                })
-              }
-              disabled={!selectedContractorId || awardPackage.isPending}
-            >
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              {awardPackage.isPending ? "Awarding..." : "Award"}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
     </>
   )
 }

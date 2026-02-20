@@ -159,3 +159,9 @@
     0 0 40px 0 rgba(0, 0, 0, 0.07);
 }
 
+.top-back-link {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.4;
+}
+

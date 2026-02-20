@@ -15,11 +15,17 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppVendorDbRouteImport } from './routes/_app/vendor-db'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppNewProjectRouteImport } from './routes/_app/new-project'
 import { Route as AppAllProjectsRouteImport } from './routes/_app/all-projects'
 import { Route as ApiWorkosCallbackRouteImport } from './routes/api/workos.callback'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as AppProjectIdRouteImport } from './routes/_app/project.$id'
 import { Route as AppPackageIdRouteImport } from './routes/_app/package.$id'
+import { Route as AppNewTechEvaluationPackageIdRouteImport } from './routes/_app/new-tech-evaluation.$packageId'
+import { Route as AppNewPackageProjectIdRouteImport } from './routes/_app/new-package.$projectId'
+import { Route as AppNewCommercialEvaluationAssetIdRouteImport } from './routes/_app/new-commercial-evaluation.$assetId'
+import { Route as AppNewAssetPackageIdRouteImport } from './routes/_app/new-asset.$packageId'
+import { Route as AppAwardPackagePackageIdRouteImport } from './routes/_app/award-package.$packageId'
 import { Route as AppPackageIdIndexRouteImport } from './routes/_app/package.$id.index'
 import { Route as AppPackageIdTechRouteImport } from './routes/_app/package.$id.tech'
 import { Route as AppPackageIdCommRouteImport } from './routes/_app/package.$id.comm'
@@ -61,6 +67,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNewProjectRoute = AppNewProjectRouteImport.update({
+  id: '/new-project',
+  path: '/new-project',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAllProjectsRoute = AppAllProjectsRouteImport.update({
   id: '/all-projects',
   path: '/all-projects',
@@ -86,6 +97,34 @@ const AppPackageIdRoute = AppPackageIdRouteImport.update({
   path: '/package/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNewTechEvaluationPackageIdRoute =
+  AppNewTechEvaluationPackageIdRouteImport.update({
+    id: '/new-tech-evaluation/$packageId',
+    path: '/new-tech-evaluation/$packageId',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppNewPackageProjectIdRoute = AppNewPackageProjectIdRouteImport.update({
+  id: '/new-package/$projectId',
+  path: '/new-package/$projectId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNewCommercialEvaluationAssetIdRoute =
+  AppNewCommercialEvaluationAssetIdRouteImport.update({
+    id: '/new-commercial-evaluation/$assetId',
+    path: '/new-commercial-evaluation/$assetId',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppNewAssetPackageIdRoute = AppNewAssetPackageIdRouteImport.update({
+  id: '/new-asset/$packageId',
+  path: '/new-asset/$packageId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAwardPackagePackageIdRoute =
+  AppAwardPackagePackageIdRouteImport.update({
+    id: '/award-package/$packageId',
+    path: '/award-package/$packageId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppPackageIdIndexRoute = AppPackageIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -149,9 +188,15 @@ export interface FileRoutesByFullPath {
   '/create-org': typeof CreateOrgRoute
   '/login': typeof LoginRoute
   '/all-projects': typeof AppAllProjectsRoute
+  '/new-project': typeof AppNewProjectRoute
   '/settings': typeof AppSettingsRoute
   '/vendor-db': typeof AppVendorDbRoute
   '/': typeof AppIndexRoute
+  '/award-package/$packageId': typeof AppAwardPackagePackageIdRoute
+  '/new-asset/$packageId': typeof AppNewAssetPackageIdRoute
+  '/new-commercial-evaluation/$assetId': typeof AppNewCommercialEvaluationAssetIdRoute
+  '/new-package/$projectId': typeof AppNewPackageProjectIdRoute
+  '/new-tech-evaluation/$packageId': typeof AppNewTechEvaluationPackageIdRoute
   '/package/$id': typeof AppPackageIdRouteWithChildren
   '/project/$id': typeof AppProjectIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -172,9 +217,15 @@ export interface FileRoutesByTo {
   '/create-org': typeof CreateOrgRoute
   '/login': typeof LoginRoute
   '/all-projects': typeof AppAllProjectsRoute
+  '/new-project': typeof AppNewProjectRoute
   '/settings': typeof AppSettingsRoute
   '/vendor-db': typeof AppVendorDbRoute
   '/': typeof AppIndexRoute
+  '/award-package/$packageId': typeof AppAwardPackagePackageIdRoute
+  '/new-asset/$packageId': typeof AppNewAssetPackageIdRoute
+  '/new-commercial-evaluation/$assetId': typeof AppNewCommercialEvaluationAssetIdRoute
+  '/new-package/$projectId': typeof AppNewPackageProjectIdRoute
+  '/new-tech-evaluation/$packageId': typeof AppNewTechEvaluationPackageIdRoute
   '/project/$id': typeof AppProjectIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/workos/callback': typeof ApiWorkosCallbackRoute
@@ -193,9 +244,15 @@ export interface FileRoutesById {
   '/create-org': typeof CreateOrgRoute
   '/login': typeof LoginRoute
   '/_app/all-projects': typeof AppAllProjectsRoute
+  '/_app/new-project': typeof AppNewProjectRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/vendor-db': typeof AppVendorDbRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/award-package/$packageId': typeof AppAwardPackagePackageIdRoute
+  '/_app/new-asset/$packageId': typeof AppNewAssetPackageIdRoute
+  '/_app/new-commercial-evaluation/$assetId': typeof AppNewCommercialEvaluationAssetIdRoute
+  '/_app/new-package/$projectId': typeof AppNewPackageProjectIdRoute
+  '/_app/new-tech-evaluation/$packageId': typeof AppNewTechEvaluationPackageIdRoute
   '/_app/package/$id': typeof AppPackageIdRouteWithChildren
   '/_app/project/$id': typeof AppProjectIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -218,9 +275,15 @@ export interface FileRouteTypes {
     | '/create-org'
     | '/login'
     | '/all-projects'
+    | '/new-project'
     | '/settings'
     | '/vendor-db'
     | '/'
+    | '/award-package/$packageId'
+    | '/new-asset/$packageId'
+    | '/new-commercial-evaluation/$assetId'
+    | '/new-package/$projectId'
+    | '/new-tech-evaluation/$packageId'
     | '/package/$id'
     | '/project/$id'
     | '/api/auth/$'
@@ -241,9 +304,15 @@ export interface FileRouteTypes {
     | '/create-org'
     | '/login'
     | '/all-projects'
+    | '/new-project'
     | '/settings'
     | '/vendor-db'
     | '/'
+    | '/award-package/$packageId'
+    | '/new-asset/$packageId'
+    | '/new-commercial-evaluation/$assetId'
+    | '/new-package/$projectId'
+    | '/new-tech-evaluation/$packageId'
     | '/project/$id'
     | '/api/auth/$'
     | '/api/workos/callback'
@@ -261,9 +330,15 @@ export interface FileRouteTypes {
     | '/create-org'
     | '/login'
     | '/_app/all-projects'
+    | '/_app/new-project'
     | '/_app/settings'
     | '/_app/vendor-db'
     | '/_app/'
+    | '/_app/award-package/$packageId'
+    | '/_app/new-asset/$packageId'
+    | '/_app/new-commercial-evaluation/$assetId'
+    | '/_app/new-package/$projectId'
+    | '/_app/new-tech-evaluation/$packageId'
     | '/_app/package/$id'
     | '/_app/project/$id'
     | '/api/auth/$'
@@ -333,6 +408,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/new-project': {
+      id: '/_app/new-project'
+      path: '/new-project'
+      fullPath: '/new-project'
+      preLoaderRoute: typeof AppNewProjectRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/all-projects': {
       id: '/_app/all-projects'
       path: '/all-projects'
@@ -366,6 +448,41 @@ declare module '@tanstack/react-router' {
       path: '/package/$id'
       fullPath: '/package/$id'
       preLoaderRoute: typeof AppPackageIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/new-tech-evaluation/$packageId': {
+      id: '/_app/new-tech-evaluation/$packageId'
+      path: '/new-tech-evaluation/$packageId'
+      fullPath: '/new-tech-evaluation/$packageId'
+      preLoaderRoute: typeof AppNewTechEvaluationPackageIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/new-package/$projectId': {
+      id: '/_app/new-package/$projectId'
+      path: '/new-package/$projectId'
+      fullPath: '/new-package/$projectId'
+      preLoaderRoute: typeof AppNewPackageProjectIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/new-commercial-evaluation/$assetId': {
+      id: '/_app/new-commercial-evaluation/$assetId'
+      path: '/new-commercial-evaluation/$assetId'
+      fullPath: '/new-commercial-evaluation/$assetId'
+      preLoaderRoute: typeof AppNewCommercialEvaluationAssetIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/new-asset/$packageId': {
+      id: '/_app/new-asset/$packageId'
+      path: '/new-asset/$packageId'
+      fullPath: '/new-asset/$packageId'
+      preLoaderRoute: typeof AppNewAssetPackageIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/award-package/$packageId': {
+      id: '/_app/award-package/$packageId'
+      path: '/award-package/$packageId'
+      fullPath: '/award-package/$packageId'
+      preLoaderRoute: typeof AppAwardPackagePackageIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/package/$id/': {
@@ -512,18 +629,31 @@ const AppPackageIdRouteWithChildren = AppPackageIdRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppAllProjectsRoute: typeof AppAllProjectsRoute
+  AppNewProjectRoute: typeof AppNewProjectRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppVendorDbRoute: typeof AppVendorDbRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAwardPackagePackageIdRoute: typeof AppAwardPackagePackageIdRoute
+  AppNewAssetPackageIdRoute: typeof AppNewAssetPackageIdRoute
+  AppNewCommercialEvaluationAssetIdRoute: typeof AppNewCommercialEvaluationAssetIdRoute
+  AppNewPackageProjectIdRoute: typeof AppNewPackageProjectIdRoute
+  AppNewTechEvaluationPackageIdRoute: typeof AppNewTechEvaluationPackageIdRoute
   AppPackageIdRoute: typeof AppPackageIdRouteWithChildren
   AppProjectIdRoute: typeof AppProjectIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAllProjectsRoute: AppAllProjectsRoute,
+  AppNewProjectRoute: AppNewProjectRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppVendorDbRoute: AppVendorDbRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAwardPackagePackageIdRoute: AppAwardPackagePackageIdRoute,
+  AppNewAssetPackageIdRoute: AppNewAssetPackageIdRoute,
+  AppNewCommercialEvaluationAssetIdRoute:
+    AppNewCommercialEvaluationAssetIdRoute,
+  AppNewPackageProjectIdRoute: AppNewPackageProjectIdRoute,
+  AppNewTechEvaluationPackageIdRoute: AppNewTechEvaluationPackageIdRoute,
   AppPackageIdRoute: AppPackageIdRouteWithChildren,
   AppProjectIdRoute: AppProjectIdRoute,
 }

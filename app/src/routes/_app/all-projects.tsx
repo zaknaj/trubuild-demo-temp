@@ -1,56 +1,33 @@
 import { Button } from "@/components/ui/button"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { createProjectFn } from "@/fn/projects"
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { useState } from "react"
-import {
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
+  useQuery,
 } from "@tanstack/react-query"
 import {
   projectsQueryOptions,
   currentUserOrgRoleQueryOptions,
-  orgsQueryOptions,
-  sessionQueryOptions,
 } from "@/lib/query-options"
-import { CountrySelect } from "@/components/CountrySelect"
 import { SimpleHeader } from "@/components/SimpleHeader"
-import { getOrgCountry } from "@/lib/utils"
 import type { Project } from "@/lib/types"
 import { PlusIcon, FolderIcon, ChevronRightIcon } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 
 export const Route = createFileRoute("/_app/all-projects")({
-  loader: ({ context }) => {
-    context.queryClient.prefetchQuery(projectsQueryOptions)
-    context.queryClient.prefetchQuery(currentUserOrgRoleQueryOptions)
-  },
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const { data: projects } = useSuspenseQuery(projectsQueryOptions)
-  const { data: userRole } = useSuspenseQuery(currentUserOrgRoleQueryOptions)
-  const { data: orgs } = useSuspenseQuery(orgsQueryOptions)
-  const { data: session } = useSuspenseQuery(sessionQueryOptions)
-  const queryClient = useQueryClient()
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [projectName, setProjectName] = useState("")
+  const navigate = useNavigate()
+  const { data: projects } = useQuery(projectsQueryOptions)
+  const { data: userRole } = useQuery(currentUserOrgRoleQueryOptions)
 
-  const activeOrg = orgs?.find(
-    (o) => o.id === session?.session?.activeOrganizationId
-  )
-  const orgCountry = getOrgCountry(activeOrg?.metadata)
-  const [projectCountry, setProjectCountry] = useState(orgCountry)
+  if (!projects || !userRole) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Spinner className="size-6 stroke-1" />
+      </div>
+    )
+  }
 
   const canCreateProject =
     userRole.role === "owner" || userRole.role === "admin"
@@ -58,29 +35,6 @@ function RouteComponent() {
   // Only org owners/admins can see award stats (commercial data)
   // Regular members might have limited access to individual projects
   const canViewAwardStats = canCreateProject
-
-  const createProject = useMutation({
-    mutationFn: ({ name, country }: { name: string; country: string }) =>
-      createProjectFn({ data: { name, country } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: projectsQueryOptions.queryKey })
-      closeSheet()
-    },
-  })
-
-  const closeSheet = () => {
-    setSheetOpen(false)
-    setProjectName("")
-    setProjectCountry(orgCountry)
-    createProject.reset()
-  }
-
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault()
-    const name = projectName.trim()
-    if (!name) return
-    createProject.mutate({ name, country: projectCountry })
-  }
 
   return (
     <>
@@ -93,7 +47,7 @@ function RouteComponent() {
             </h2>
             {canCreateProject && (
               <Button
-                onClick={() => setSheetOpen(true)}
+                onClick={() => navigate({ to: "/new-project" })}
                 size="sm"
                 variant="outline"
               >
@@ -159,54 +113,6 @@ function RouteComponent() {
           )}
         </div>
       </div>
-
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="w-[350px] sm:max-w-none">
-          <form onSubmit={handleCreate}>
-            <SheetHeader>
-              <SheetTitle>Create project</SheetTitle>
-              <SheetDescription>
-                Create a new project for your organization.
-              </SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 p-4 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="project-name">Project name</Label>
-                <Input
-                  id="project-name"
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  disabled={createProject.isPending}
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Country</Label>
-                <CountrySelect
-                  value={projectCountry}
-                  onValueChange={setProjectCountry}
-                  disabled={createProject.isPending}
-                />
-              </div>
-              {createProject.error ? (
-                <p className="text-sm text-red-500">
-                  {createProject.error instanceof Error
-                    ? createProject.error.message
-                    : "Unable to create project."}
-                </p>
-              ) : null}
-            </div>
-            <SheetFooter>
-              <Button
-                type="submit"
-                disabled={createProject.isPending || !projectName.trim()}
-              >
-                {createProject.isPending ? "Creating..." : "Create project"}
-              </Button>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
     </>
   )
 }
